@@ -10,6 +10,9 @@ library(stringr)
 library(ggvis)
 library(shinyalert)
 library(shinyjs)
+library(bslib)
+library(shinymaterial)
+library(shinyalert)
 
 #highlight function
 highlightjoel <- function(text,search){
@@ -45,13 +48,14 @@ saveData <- function(data) {
 fields <- c("Study", "Decision")
 
 #UI##########
-ui <- fluidPage(
+ui <- material_page(
+    font_color = "green",
     useShinyalert(),
+    primary_theme_color = "darkgreen",
+    secondary_theme_color = "darkgreen",
     useShinyjs(),
-    #shinythemes::themeSelector(),
-    #title
-    theme = shinytheme("spacelab"),
-    titlePanel("Meta-Screen"), 
+    title= img(src="meta.png", height = 85),
+    br(),
     actionBttn(
         inputId = "help",
         label = "Help", 
@@ -59,39 +63,31 @@ ui <- fluidPage(
         color = "royal"),
 
     # Sidebar 
-    sidebarLayout(
-        sidebarPanel(
-        fileInput("Ref", "Import a .csv file"),
-        htmlOutput("progress"),
-        br(),
-        textInput("search1", "Green Keyword:", value = "NULL"),
-        br(),
-        textInput("search2", "Red Keyword:",value = "NULL"),
-        br(),
-        textInput("search3", "Purple Keyword:",value = "NULL"),
-        br(),
-        textInput("search4", "Orange Keyword:",value = "NULL"),
-        br(),
-        textInput("search5", "Blue Keyword:",value = "NULL"),
+    material_row(
+        material_column(
+            width = 4,
+            material_card(
+                depth = 2,
+        material_file_input("Ref", label = "Import a .csv")),
+        h5(htmlOutput("progress")),
+        material_card(
+            depth = 2,
+        material_text_box("search1", "Green Keyword:", value = "   ", color = "green"),
+        material_text_box("search2","Red Keyword:",value =  "   ", color = "red"),
+        material_text_box("search3", "Purple Keyword:",value =  "   ", color = "purple"),
+        material_text_box("search4", "Orange Keyword:",value =  "   ", color = "orange"),
+        material_text_box("search5", "Blue Keyword:",value =  "   ", color = "blue"),
         ),
-        
-        #main panel
-        mainPanel(
-                h4(htmlOutput("overview")), 
-                br(), br(),
-                h4(br(), htmlOutput("abstract")),
-                br(), br(),
-                h4( br(), htmlOutput("keyword")),
-            br(), br(),
-            br(), br(),
-            radioGroupButtons(
-                inputId = "Decision", label = "Decision :", 
-                choices = c("Accept", "Maybe", " Reject"), 
-                justified = TRUE, status = "default", individual = T, selected = "",
-                checkIcon = list(yes = icon("ok", lib = "glyphicon"))),
-            br(), 
-            fluidRow(
-            column(4,
+        material_card(
+            width = 2,
+            depth = 2,
+            actionBttn(
+                inputId = "Next",
+                label = "Next Study",
+                style = "fill", 
+                color = "success",
+                block = T, 
+                size = "sm"),
             actionBttn(
                 inputId = "Previous",
                 label = "Previous Study",
@@ -99,56 +95,46 @@ ui <- fluidPage(
                 color = "royal",
                 block = T, 
                 size = "sm")),
-            column(4, offset = 4,
-            actionBttn(
-                inputId = "Next",
-                label = "Next Study",
-                style = "fill", 
-                color = "success",
-                block = T, 
-                size = "sm")),
+        downloadButton("downloadData", "Download Data"),
+        textInput("Study", "study", value = 1)
                 ),
-            br(), br(),
-            br(), br(),
-            br(), br(),
-            br(), br(),
-            br(),
-            br(),
-            downloadButton("downloadData", "Download Data"),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            br(),
-            textInput("Study", "study", value = 1)
+        
+        #main panel
+            material_column(
+                width = 8,
+                material_card(
+                    depth = 2,
+                h6(htmlOutput("overview")), 
+                br(), br(),
+                h6(br(), htmlOutput("abstract")),
+                br(), br(),
+                h6( br(), htmlOutput("keyword"))),
+            material_card(
+                depth = 2,
+                radioButtons(
+                inputId = "Decision",
+                label = NULL, 
+                choices = c("No Decision Made", "Accept", "Maybe", " Reject"),
+                selected = "No Decision Made",
+                width = "500px")
+            ),
         )
-    )
 )
-
+)
 #Server########
 server <- function(input, output, session) { 
-
     #create a reactive that changes depending on reference file added    
     datasetInput <- reactive({
         req(input$Ref)
         read.csv(input$Ref$datapath)
 })
+    
+    countertot <- reactiveValues(total = 1)
+    
+    observeEvent(input$Ref,{
+        dat<-read.csv(input$Ref$datapath)
+        countertot$total <- nrow(dat)
+    })
     
     #counter to move studies and subset, counter values change depedning on next/previous
     counter <- reactiveValues(countervalue = 1) 
@@ -161,13 +147,16 @@ server <- function(input, output, session) {
         counter$countervalue <- counter$countervalue - 1
 })
     
-    #alert for trying to go backward below 1
     observeEvent(counter$countervalue, {
         if(counter$countervalue == 0) {
-            showModal(modalDialog(
-                title = "Invalid selection",
-                "Please press either next"))}
-})
+            counter$countervalue <- counter$countervalue + 1
+        }})
+    
+    observeEvent(counter$countervalue, {
+        if(counter$countervalue > countertot$total) {
+            counter$countervalue <- countertot$total
+        }
+    })
 
      #the dataset is then subsetted to represent the counter 
     StudyData <- reactive({
@@ -176,9 +165,11 @@ server <- function(input, output, session) {
     
     observeEvent(input$Next, {
         updateTextInput(session, "Study", value = counter$countervalue)
+        shinyjs::reset("Decision")
 })
     shinyjs::hide("Study")
 
+    
     #reference that is shown changes depedning on studydata
     output$overview <- renderUI({
         str3 <- paste("<b>Title:</b>", as.character(StudyData()$Title))
@@ -210,7 +201,7 @@ server <- function(input, output, session) {
         
             #alert for intro
             shinyalert(
-                title = "Welcome to Meta-Screen",
+                title = "Welcome to MetaScreen",
                 text = "by Ed Ivimey-Cook and Joel Pick",
                 closeOnEsc = TRUE,
                 closeOnClickOutside = FALSE,
@@ -285,8 +276,8 @@ server <- function(input, output, session) {
                 percent = round(counter$countervalue/nrow(datasetInput())*100, 0)
                 paste0("<font color=\"#ff3333\"><b>",percent,"%", " ", "screened","</b></font>")
                 
-})                
-
+            })                
+            
             
 }
         
