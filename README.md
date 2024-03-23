@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/EIvimeyCook/MetaScreen/blob/master/MetaScreen/www/meta.png" width = "200"/>
+  <img src="www/meta.png" width = "200"/>
 </p>
 
 <div align="center">
