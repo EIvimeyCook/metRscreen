@@ -22,27 +22,26 @@ highlightjoel <- function(text,search){
 
     for(j in 1:length(search)){
         if(nchar(search[[j]]) !=0){
-            
-            split_search <- strsplit(search,", ")[[1]]
+            split_search <- strsplit(as.character(search),", ")[[j]]
             split_search <- gsub("\\*","[a-zA-Z]+",split_search)
 
             for(i in 1:length(split_search)){
                 search_term <- paste0("(^|\\W)(",split_search[i],")(\\W|$)")
                 text <- gsub(search_term,paste0("\\1<font color=\"",colours[j],"\"><b>\\2</b></font>\\3"),text, ignore.case = T)
             }
-        }     
+        }    
     }
     return(text)
 }
 
 
 #UI##########
-ui <- material_page(
+ui = material_page(
     font_color = "green",
     primary_theme_color = "darkgreen",
     secondary_theme_color = "darkgreen",
     useShinyjs(),
-    title= img(src="meta.png", height = 85),
+    title = img(src="meta.png", height = 85),
     br(),
     actionBttn(
         inputId = "help",
@@ -131,7 +130,7 @@ ui <- material_page(
 )
 
 #Server########
-server <- function(input, output, session) { 
+server = function(input, output, session) { 
     
     #alert for intro message
     shinyalert(
@@ -157,7 +156,7 @@ server <- function(input, output, session) {
                           <br>
                            2. To highlight multiple words, separate each string with a comma and no space. <br>
                            <br>
-                           3. To use a wildcard search, enter the * character after the appropriate string.
+                           3. To use a wildcard search, enter the * character after the appropriate string. <br>
                           <br>
                           4. If you want to hide author names and journal (blind) then select the checkbox prior to importing ",
                    type = "info",
@@ -178,6 +177,7 @@ server <- function(input, output, session) {
     
     #observe when a dataframe is added and create a total counter that is the length
     observeEvent(input$Ref,{
+        print(input$Ref$datapath)
         dat<-read.csv(input$Ref$datapath)
         countertot$total <- nrow(dat)
     })
@@ -276,5 +276,6 @@ server <- function(input, output, session) {
 
 }
 
+
 #Run##########
-runApp(shinyApp(ui = ui, server = server))
+shinyApp(ui = ui, server = server)
