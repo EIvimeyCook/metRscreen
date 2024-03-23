@@ -6,4 +6,4 @@
  <h1>MetaScreen</h1>
 </div>
 
-MetaScreen shiny app allows you to screen abstracts and titles of papers along with highlighting keywords. Be sure to import a .csv file with the relevant screen information. 
+The MetaScreen shiny app allows you to screen papers via their abstracts and titles along with highlighting keywords in multiple colours. Be sure to import a .csv file with the relevant screen information. 
