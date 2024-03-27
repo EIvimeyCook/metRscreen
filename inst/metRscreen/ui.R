@@ -7,13 +7,13 @@ ui <- function(){
   primary_theme_color = "darkgreen",
   secondary_theme_color = "darkgreen",
   shinyjs::useShinyjs(),
-  title = shiny::tags$img(src="logo/metRscreen.png", height = 85),
-  br(),
+  title = shiny::tags$img(src="logo/metRscreen.png", height = 65),
   shinyWidgets::actionBttn(
     inputId = "help",
     label = "Help",
-    style = "minimal",
-    color = "royal"),
+    style = "fill",
+    color = "danger"),
+  br(),
   # Sidebar
   shinymaterial::material_row(
     shinymaterial::material_column(
@@ -42,14 +42,14 @@ ui <- function(){
         shinyWidgets::actionBttn(
           inputId = "Next",
           label = "Next Study",
-          style = "bordered",
+          style = "fill",
           color = "success",
           block = T,
           size = "sm"),
         shinyWidgets::actionBttn(
           inputId = "Previous",
           label = "Previous Study",
-          style = "bordered",
+          style = "fill",
           color = "royal",
           block = T,
           size = "sm")),
@@ -66,21 +66,21 @@ ui <- function(){
           shinyWidgets::actionBttn(
             inputId = "Accept",
             label = "Accept",
-            style = "pill",
+            style = "fill",
             color = "success",
             block = T,
             size = "sm"),
           shinyWidgets::actionBttn(
             inputId = "NoDecision",
             label = "No Decision",
-            style = "pill",
+            style = "fill",
             color = "primary",
             block = T,
             size = "sm"),
           shinyWidgets::actionBttn(
             inputId = "Reject",
             label = "Reject",
-            style = "pill",
+            style = "fill",
             color = "warning",
             block = T,
             size = "sm"))),
