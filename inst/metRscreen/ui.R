@@ -7,14 +7,14 @@ ui <- function(){
   primary_theme_color = "darkgreen",
   secondary_theme_color = "darkgreen",
   shinyjs::useShinyjs(),
-  title = shiny::tags$img(src="meta.png", height = 85),
+  title = shiny::tags$img(src="logo/metRscreen.png", height = 85),
   br(),
   shinyWidgets::actionBttn(
     inputId = "help",
-    label = "Help", 
+    label = "Help",
     style = "minimal",
     color = "royal"),
-  # Sidebar 
+  # Sidebar
   shinymaterial::material_row(
     shinymaterial::material_column(
       width = 4,
@@ -22,7 +22,7 @@ ui <- function(){
         depth = 2,
         shinyWidgets::awesomeCheckbox(
           inputId = "hide_name",
-          label = "Hide author names and journal?", 
+          label = "Hide author names and journal?",
           value = F,
           status = "info"
         ),
@@ -42,21 +42,21 @@ ui <- function(){
         shinyWidgets::actionBttn(
           inputId = "Next",
           label = "Next Study",
-          style = "bordered", 
+          style = "bordered",
           color = "success",
-          block = T, 
+          block = T,
           size = "sm"),
         shinyWidgets::actionBttn(
           inputId = "Previous",
           label = "Previous Study",
-          style = "bordered", 
+          style = "bordered",
           color = "royal",
-          block = T, 
+          block = T,
           size = "sm")),
       shiny::textOutput("info"),
       shiny::textInput("Study", "study", value = 1)
     ),
-    
+
     #main panel
     shinymaterial::material_column(
       width = 8,
@@ -66,27 +66,27 @@ ui <- function(){
           shinyWidgets::actionBttn(
             inputId = "Accept",
             label = "Accept",
-            style = "pill", 
+            style = "pill",
             color = "success",
-            block = T, 
+            block = T,
             size = "sm"),
           shinyWidgets::actionBttn(
             inputId = "NoDecision",
             label = "No Decision",
-            style = "pill", 
+            style = "pill",
             color = "primary",
-            block = T, 
+            block = T,
             size = "sm"),
           shinyWidgets::actionBttn(
             inputId = "Reject",
             label = "Reject",
-            style = "pill", 
+            style = "pill",
             color = "warning",
-            block = T, 
+            block = T,
             size = "sm"))),
       shinymaterial::material_card(
         depth = 2,
-        shiny::tags$h6(shiny::htmlOutput("overview")), 
+        shiny::tags$h6(shiny::htmlOutput("overview")),
         shiny::br(),
         shiny::tags$h6(shiny::br(), shiny::htmlOutput("abstract")),
         shiny::br(),
