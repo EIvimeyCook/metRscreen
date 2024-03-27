@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="insta/metRscreen/www.meta.png" width = "200"/>
+  <img src="https://github.com/EIvimeyCook/metRscreen/blob/master/inst/metRscreen/www/logo/meta.png" width = "200"/>
 </p>
 
 <div align="center">
