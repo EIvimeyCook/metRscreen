@@ -87,9 +87,7 @@ ui <- function(){
       shinymaterial::material_card(
         depth = 2,
         shiny::tags$h6(shiny::htmlOutput("overview")),
-        shiny::br(),
         shiny::tags$h6(shiny::br(), shiny::htmlOutput("abstract")),
-        shiny::br(),
         shiny::tags$h6(shiny::br(), shiny::htmlOutput("keyword")))
     )
   )
