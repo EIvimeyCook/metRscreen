@@ -1,0 +1,18 @@
+Package: metRscreen
+Title: metRscreen
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Ed", "Ivimey-Cook", , "e.ivimeycook@gmail.com", role = c("aut", "cre")),
+    person("Joel", "Pick", , "joel.l.pick@gmail.com", role = "aut")
+  )
+Description: The metRscreen shiny app allows you to screen papers via their abstracts and titles and allows for highlighting of keywords in multiple colours. 
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Imports: 
+    shiny,
+    shinyalert,
+    shinyjs,
+    shinymaterial,
+    shinyWidgets
