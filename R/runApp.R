@@ -3,7 +3,7 @@
 #' @return A dataframe of decisioned papers
 #' @export
 
-metaScreen <- function() {
+metRscreen <- function() {
   appDir <- system.file("metRscreen", package = "metRscreen")
   shiny::runApp(appDir, display.mode = "normal")
 }
