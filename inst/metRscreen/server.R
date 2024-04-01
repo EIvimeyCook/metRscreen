@@ -1,24 +1,16 @@
 #server function
 server <- function(input, output, session){
+  #reactive objects########
+  #create a counter for the total
+  countertot <- shiny::reactiveValues(total = 1)
 
-  #alert for intro message
-  shinyalert::shinyalert(
-    title = "Welcome to metRscreen",
-    text = "by Ed Ivimey-Cook and Joel Pick",
-    closeOnEsc = TRUE,
-    closeOnClickOutside = FALSE,
-    html = FALSE,
-    type = "",
-    showConfirmButton = TRUE,
-    showCancelButton = FALSE,
-    confirmButtonText = "OK",
-    confirmButtonCol = "#AEDEF4",
-    timer = 200000,
-    imageUrl = "",
-    animation = TRUE
-  )
+  #create a new dataframe based on the old data in a reactive ovject
+  original <- shiny::reactiveValues(oldData = NULL, newData = NULL)
 
-  #help tips when help is pressed
+  #counter to move studies and subset, counter values change depedning on next/previous
+   counter <- shiny::reactiveValues(countervalue = 0, next_count = 0)
+
+  #help tips when help is pressed######
   shiny::observeEvent(input$help, {
     shinyalert::shinyalert("Tips",
                "1. In order to use a .csv file, export references from Zotero. <br>
@@ -33,116 +25,153 @@ server <- function(input, output, session){
                confirmButtonText = "OK")
   })
 
-  #hide the study section
-  shinyjs::hide("Study")
+  #cite me action button#######
+  shiny::observeEvent(input$citeme, {
+    shinyalert::shinyalert(
+      title = "metRscreen",
+      text = paste(shiny::tags$h5("Made by Ed Ivimey-Cook and Joel Pick")),
+      size = "l",
+      closeOnClickOutside = FALSE,
+      html = TRUE,
+      type = "",
+      showConfirmButton = TRUE,
+      showCancelButton = FALSE,
+      confirmButtonText = "OK",
+      confirmButtonCol = "#AEDEF4",
+      animation = TRUE,
+      imageUrl =  "logo/metRscreen.png",
+      imageHeight = "88",
+      imageWidth = "80"
+    )
+  })
 
-  #create a reactive dataframe that changes depending on reference file added
+  #input dataframe#######
   datasetInput <- shiny::reactive({
-    shiny::req(input$Ref)
-    read.csv(input$Ref$datapath)
-  })
-  #create a counter for the total
-  countertot <- shiny::reactiveValues(total = 1)
-
-  #observe when a dataframe is added and create a total counter that is the length
-  shiny::observeEvent(input$Ref,{
-    print(input$Ref$datapath)
-    dat<-read.csv(input$Ref$datapath)
-    countertot$total <- nrow(dat)
-  })
-
-  #create a new dataframe based on the old data in a reactive ovject
-  original <- shiny::reactiveValues(oldData = NULL, newData = NULL)
-
-  #add some new columns to the existing data
-  shiny::observeEvent(input$Ref, {
-    theFile <- input$Ref
-    if(is.null(theFile)) {
-      original$oldData <- NULL
-    } else {
-      original$oldData <- read.csv(theFile$datapath, 1)
-      original$newData <- rep("To Be Screened", times = nrow(original$oldData))
+    shiny::req(input$ref)
+    shinyFiles::shinyFileChoose(input,'ref', roots = shinyFiles::getVolumes(), session = session,
+                                filetype = "csv")
+    if(length(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath) > 0) {
+   read.csv(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath)
     }
   })
 
-  #progress displayed based on counter and percentage
-  output$progress <- shiny::renderText({
-    percent = round(counter$countervalue/nrow(datasetInput())*100, 0)
-    paste0("<font color=\"#ff3333\"><b>",percent,"%", " ", "screened","</b></font> <font color=\"#ff3333\"><b>","(Paper No = ", counter$countervalue,"</b>) </font>")
+  #counter total######
+  shiny::observeEvent(input$ref,{
+    countertot$total <- nrow(datasetInput())
   })
 
-  #counter to move studies and subset, counter values change depedning on next/previous
-  counter <- shiny::reactiveValues(countervalue = 1)
+  #progress displayed based on counter and percentage #######
+   output$progress <- shiny::renderText({
+     shiny::req(input$ref)
+     percent = round(counter$countervalue/countertot$total*100, 0)
+     paste0("<font color=\"#ff3333\"><b>",percent,"%", " ", "screened","</b></font> <font color=\"#ff3333\"><b>","(Paper No = ", counter$countervalue,"</b>) </font>")
+   })
 
-  #change the study with next and previous
-  shiny::observeEvent(input$Next, {
-    counter$countervalue <- counter$countervalue + 1
+  #change the study with next and previous#######
+   shiny::observeEvent(input$Next, {
+     counter$countervalue <- counter$countervalue + 1
+   })
+
+   shiny::observeEvent(input$Previous, {
+     counter$countervalue <- counter$countervalue - 1
+   })
+
+   #set boundaries for the counter based on total and reaching zero
+   shiny::observeEvent(counter$countervalue, {
+     if(counter$countervalue == 0) {
+       counter$countervalue <- counter$countervalue + 1
+     }})
+
+   shiny::observeEvent(counter$countervalue, {
+     if(counter$countervalue > countertot$total) {
+       counter$countervalue <- countertot$total
+     }
+   })
+
+  #the dataset is then subsetted to represent the counter #######
+   StudyData <-  shiny::reactive({
+     datasetInput()[counter$countervalue,]
+   })
+
+
+  #render abstract text highlighted based on search########
+   output$abstract <- shiny::renderText({
+     highlight_text(as.character(StudyData()$Abstract), search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
+   })
+
+  #render keyword text highlighted based on search######
+   output$keyword <- shiny::renderText({
+     highlight_text(as.character(StudyData()$Manual.Tags), search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
+   })
+
+  #outputs for each section #######
+   output$title <- shiny::renderUI({
+     shiny::req(input$ref)
+     shiny::req(input$show_fields)
+     if("Title" %in% input$show_fields){
+       shiny::HTML(paste("<b>Title:</b>", as.character(StudyData()$Title)))
+       } else {
+         shiny::HTML(paste())
+         }
+     })
+
+   output$author <- shiny::renderUI({
+     shiny::req(input$ref)
+     shiny::req(input$show_fields)
+     if("Author" %in% input$show_fields){
+       shiny::HTML(paste("<b>Author:</b>", as.character(StudyData()$Author)))
+     } else {
+       shiny::HTML(paste())
+     }
+   })
+
+   output$year <- shiny::renderUI({
+     shiny::req(input$ref)
+     shiny::req(input$show_fields)
+     if("Year" %in% input$show_fields){
+       shiny::HTML(paste("<b>Year:</b>", as.character(StudyData()$Publication.Year)))
+     } else {
+       shiny::HTML(paste())
+     }
+   })
+
+   output$journal <- shiny::renderUI({
+     shiny::req(input$ref)
+     shiny::req(input$show_fields)
+     if("Journal" %in% input$show_fields){
+       shiny::HTML(paste("<b>Journal:</b>", as.character(StudyData()$Publication.Title)))
+     } else {
+       shiny::HTML(paste())
+     }
+   })
+
+  #create a newversion of the data frame######
+  shiny::observeEvent(input$ref,{
+      original$oldData <- datasetInput()
+      original$newData <- cbind(original$oldData, Screen = "To be screened")
   })
 
-  shiny::observeEvent(input$Previous, {
-    counter$countervalue <- counter$countervalue - 1
-  })
-
-  #change and save with accept/reject and nodecision
+  #change and save with accept/reject and nodecision######
   shiny::observeEvent(input$Accept, {
-    original$newData[counter$countervalue] <- "Accept"
+    original$newData[counter$countervalue,]$Screen <- "Accept"
     counter$countervalue <- counter$countervalue + 1
-    write.csv(as.data.frame(shiny::reactiveValuesToList(original)), file = file.path(here::here(),"ScreenedData.csv"))
+    write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
+              file = paste(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "Screened.csv"))
   })
 
   shiny::observeEvent(input$Reject, {
-    original$newData[counter$countervalue] <- "Reject"
+    original$newData[counter$countervalue,]$Screen <- "Reject"
     counter$countervalue <- counter$countervalue + 1
-    write.csv(as.data.frame(shiny::reactiveValuesToList(original)), file = file.path(here::here(),"ScreenedData.csv"))
+    write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
+              file = paste(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "Screened.csv"))
   })
 
   shiny::observeEvent(input$NoDecision, {
-    original$newData[counter$countervalue] <- "No Decision"
+    original$newData[counter$countervalue,]$Screen <- "No Decision"
     counter$countervalue <- counter$countervalue + 1
-    write.csv(as.data.frame(shiny::reactiveValuesToList(original)), file = file.path(here::here(),"ScreenedData.csv"))
+    write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
+              file = paste(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "Screened.csv"))
   })
-
-  #set boundaries for the counter based on total and reaching zero
-  shiny::observeEvent(counter$countervalue, {
-    if(counter$countervalue == 0) {
-      counter$countervalue <- counter$countervalue + 1
-    }})
-
-  shiny::observeEvent(counter$countervalue, {
-    if(counter$countervalue > countertot$total) {
-      counter$countervalue <- countertot$total
-    }
-  })
-
-  #the dataset is then subsetted to represent the counter
-  StudyData <-  shiny::reactive({
-    datasetInput()[counter$countervalue,]
-  })
-
-  #reference that is shown changes depedning on studydata and if you press hide name
-  output$overview <-  shiny::renderUI({
-    str3 <- paste("<b>Title:</b>", as.character(StudyData()$Title))
-    str1 <- paste("<b>Author(s):</b>",as.character(StudyData()$Author))
-    str1b <- paste("<b>Author(s):</b> Hidden")
-    str2 <- paste("<b>Year:</b>", as.character(StudyData()$Publication.Year))
-    str4 <- paste("<b>Journal:</b>", as.character(StudyData()$Publication.Title))
-    str4b <- paste("<b>Journal:</b> Hidden")
-    if(input$hide_name){
-      shiny::HTML(paste(str3, str1b, str2,  str4b,  sep = '<br/><br/>'))
-    } else {shiny::HTML(paste(str3, str1, str2,  str4, sep = '<br/><br/>'))}
-  })
-
-  #render abstract text highlighted based on search
-  output$abstract <- shiny::renderText({
-    highlight_text(as.character(StudyData()$Abstract), search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
-  })
-
-  #render keyword text highlighted based on search
-  output$keyword <- shiny::renderText({
-    highlight_text(as.character(StudyData()$Manual.Tags), search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
-  })
-
-
 }
 
 
