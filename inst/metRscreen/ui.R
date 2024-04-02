@@ -109,7 +109,12 @@ ui <- function() {
           block = T,
           size = "sm"
         )
-      )
+      ),
+      shinyjs::hidden(shinyWidgets::prettyRadioButtons(
+        inputId = "reject.reason",
+        label = NULL,
+        choices = "",
+      ))
     )
   )
 }

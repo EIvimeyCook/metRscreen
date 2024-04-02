@@ -60,6 +60,24 @@ server <- function(input, output, session){
     countertot$total <- nrow(datasetInput())
   })
 
+  #update radiogroup with improted reasons####
+   shiny::observe({
+     if(length(reject.list > 0)){
+     shinyWidgets::updatePrettyRadioButtons(
+       session = session,
+       inputId = "reject.reason",
+       choices = c(reject.list),
+       selected = character(0),
+       inline = TRUE,
+       prettyOptions = list(icon = icon("check"),
+                            bigger = TRUE,
+                            status = "info",
+                            animation = "jelly")
+     )
+       shinyjs::show("reject.reason")
+}
+   })
+
   #progress displayed based on counter and percentage #######
    output$progress <- shiny::renderText({
      shiny::req(input$ref)
@@ -148,7 +166,8 @@ server <- function(input, output, session){
   #create a newversion of the data frame######
   shiny::observeEvent(input$ref,{
       original$oldData <- datasetInput()
-      original$newData <- cbind(original$oldData, Screen = "To be screened")
+      original$newData <- cbind(original$oldData, Screen = "To be screened",
+                                Reason = "No reason given")
   })
 
   #change and save with accept/reject and nodecision######
@@ -161,6 +180,9 @@ server <- function(input, output, session){
 
   shiny::observeEvent(input$Reject, {
     original$newData[counter$countervalue,]$Screen <- "Reject"
+    if(length(input$reject.reason > 0)){
+      original$newData[counter$countervalue,]$Reason <- input$reject.reason
+    }
     counter$countervalue <- counter$countervalue + 1
     write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
               file = paste(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "Screened.csv"))
