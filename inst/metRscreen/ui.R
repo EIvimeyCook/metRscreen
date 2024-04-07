@@ -30,15 +30,17 @@ ui <- function() {
                                          multiple = FALSE,
                                          filetype = ".csv"
             ),
-            shiny::tags$h6(shiny::htmlOutput("progress"))
+            shinyjs::hidden(
+            shiny::htmlOutput("progress")
+            )
           ),
           bslib::card(
             shinyWidgets::checkboxGroupButtons(
               inputId = "show_fields",
-              label = NULL,
+              label = character(0),
               choices = c("Title", "Author", "Year", "Journal"),
               status = "primary",
-              selected = NULL,
+              selected = character(0),
               justified = "TRUE",
               checkIcon = list(
                 yes = shiny::icon("square-check"),
@@ -52,37 +54,25 @@ ui <- function() {
             shinyWidgets::textInputIcon("search3", "Purple Keyword:", placeholder = NULL),
             shinyWidgets::textInputIcon("search4", "Orange Keyword:", placeholder = NULL),
             shinyWidgets::textInputIcon("search5", "Blue Keyword:", placeholder = NULL),
-          ),
-          bslib::card(
-            shiny::splitLayout(
-              shinyWidgets::actionBttn(
-                inputId = "Previous",
-                label = "Previous Study",
-                style = "fill",
-                color = "default",
-                block = T,
-                size = "sm"
-              ),
-              shinyWidgets::actionBttn(
-                inputId = "Next",
-                label = "Next Study",
-                style = "fill",
-                color = "default",
-                block = T,
-                size = "sm"
-              )
-            )
-          ),
+          )
         ),
       bslib::card(
         max_height = 500,
         full_screen = TRUE,
-        shiny::tags$h6(shiny::htmlOutput("title")),
-        shiny::tags$h6(shiny::htmlOutput("author")),
-        shiny::tags$h6(shiny::htmlOutput("year")),
-        shiny::tags$h6(shiny::htmlOutput("journal")),
-        shiny::tags$h6(shiny::htmlOutput("abstract")),
-        shiny::tags$h6(shiny::htmlOutput("keyword"))
+        shinyjs::hidden(
+          shiny::htmlOutput("title")
+        ),
+        shinyjs::hidden(
+          shiny::htmlOutput("author")
+        ),
+        shinyjs::hidden(
+          shiny::htmlOutput("year")
+        ),
+        shinyjs::hidden(
+          shiny::htmlOutput("journal")
+        ),
+        shiny::htmlOutput("abstract"),
+        shiny::htmlOutput("keyword")
       ),
       shiny::splitLayout(
         shinyWidgets::actionBttn(

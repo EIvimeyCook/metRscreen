@@ -4,7 +4,12 @@
 \alias{metRscreen}
 \title{metRscreen}
 \usage{
-metRscreen()
+metRscreen(reject.list = NULL, metRDS = NULL)
+}
+\arguments{
+\item{reject.list}{list of rejection reasons to be added to metRscreen, can be left empty}
+
+\item{metRDS}{a save state file path to resume screening from a previous metRscreen screen}
 }
 \value{
 A dataframe of decisioned papers
