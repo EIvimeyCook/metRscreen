@@ -5,7 +5,7 @@ server <- function(input, output, session){
   countertot <- shiny::reactiveValues(total = 1)
 
   #create a new dataframe based on the old data in a reactive ovject
-  original <- shiny::reactiveValues(oldData = NULL, newData = NULL)
+  original <- shiny::reactiveValues(newData = NULL)
 
   #counter to move studies and subset, counter values change depedning on next/previous
    counter <- shiny::reactiveValues(countervalue = 0, next_count = 0)
@@ -165,8 +165,7 @@ server <- function(input, output, session){
 
   #create a newversion of the data frame######
   shiny::observeEvent(input$ref,{
-      original$oldData <- datasetInput()
-      original$newData <- cbind(original$oldData, Screen = "To be screened",
+      original$newData <- cbind(datasetInput(), Screen = "To be screened",
                                 Reason = "No reason given")
   })
 
