@@ -173,6 +173,20 @@ server <- function(input, output, session){
   shiny::observeEvent(input$Accept, {
     original$newData[counter$countervalue,]$Screen <- "Accept"
     counter$countervalue <- counter$countervalue + 1
+
+    shinyWidgets::updatePrettyRadioButtons(
+      session = session,
+      inputId = "reject.reason",
+      choices = c(reject.list),
+      selected = character(0),
+      inline = TRUE,
+      prettyOptions = list(icon = icon("check"),
+                           bigger = TRUE,
+                           status = "info",
+                           animation = "jelly")
+    )
+
+
     write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
               file = paste(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "Screened.csv"))
   })
@@ -183,6 +197,20 @@ server <- function(input, output, session){
       original$newData[counter$countervalue,]$Reason <- input$reject.reason
     }
     counter$countervalue <- counter$countervalue + 1
+
+    shinyWidgets::updatePrettyRadioButtons(
+      session = session,
+      inputId = "reject.reason",
+      choices = c(reject.list),
+      selected = character(0),
+      inline = TRUE,
+      prettyOptions = list(icon = icon("check"),
+                           bigger = TRUE,
+                           status = "info",
+                           animation = "jelly")
+    )
+
+
     write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
               file = paste(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "Screened.csv"))
   })
@@ -190,6 +218,20 @@ server <- function(input, output, session){
   shiny::observeEvent(input$NoDecision, {
     original$newData[counter$countervalue,]$Screen <- "No Decision"
     counter$countervalue <- counter$countervalue + 1
+
+    shinyWidgets::updatePrettyRadioButtons(
+      session = session,
+      inputId = "reject.reason",
+      choices = c(reject.list),
+      selected = character(0),
+      inline = TRUE,
+      prettyOptions = list(icon = icon("check"),
+                           bigger = TRUE,
+                           status = "info",
+                           animation = "jelly")
+    )
+
+
     write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
               file = paste(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "Screened.csv"))
   })
