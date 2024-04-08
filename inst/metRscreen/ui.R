@@ -26,12 +26,12 @@ ui <- function() {
           open = "open",
           bslib::card(
             shinyFiles::shinyFilesButton("ref", "Import a .csv",
-                                         title = NULL,
-                                         multiple = FALSE,
-                                         filetype = ".csv"
+              title = NULL,
+              multiple = FALSE,
+              filetype = ".csv"
             ),
             shinyjs::hidden(
-            shiny::htmlOutput("progress")
+              shiny::htmlOutput("progress")
             )
           ),
           bslib::card(
