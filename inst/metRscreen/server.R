@@ -119,7 +119,6 @@ server <- function(input, output, session) {
         )
       )
       settings.store$reject.list <- reject.list
-      shinyjs::show("reject.reason")
     }
   })
 
@@ -133,6 +132,7 @@ server <- function(input, output, session) {
   shiny::observe({
     if (isTruthy(input$ref) | (length(metRDS > 0))) {
       shinyjs::show("progress")
+      shinyjs::show("reject.reason")
     }
   })
 
