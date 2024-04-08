@@ -24,3 +24,16 @@ The only function metRscreen is metRscreen(). This can be run without any argume
 library(metRscreen)
 metRscreen()
 ```
+
+## metRscreen arguments
+Alternatively, you can specific rejection reasons as a vector with "reject.list = c()".
+
+```{r}
+metRscreen(reject.list = c("no control", "wrong study system"))
+```
+
+You can also load a previous screening iteration by providing the file path to a metRDS file "metRDS = 'path/to/.rds/file'". This will reload metRscreen to the same state as in previous screening iterations (i.e. with the same reject list, hidden paper components, and any previous screening decisions). 
+
+```{r}
+metRscreen(metRDS = "~/Desktop/example.rds))
+```
