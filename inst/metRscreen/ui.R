@@ -54,7 +54,27 @@ ui <- function() {
             shinyWidgets::textInputIcon("search3", "Purple Keyword:", placeholder = NULL),
             shinyWidgets::textInputIcon("search4", "Orange Keyword:", placeholder = NULL),
             shinyWidgets::textInputIcon("search5", "Blue Keyword:", placeholder = NULL),
+          ),
+      bslib::card(
+        shiny::splitLayout(
+          shinyWidgets::actionBttn(
+            inputId = "Previous",
+            label = "Previous Study",
+            style = "fill",
+            color = "default",
+            block = T,
+            size = "sm"
+          ),
+          shinyWidgets::actionBttn(
+            inputId = "Next",
+            label = "Next Study",
+            style = "fill",
+            color = "default",
+            block = T,
+            size = "sm"
           )
+        )
+      )
         ),
       bslib::card(
         max_height = 500,

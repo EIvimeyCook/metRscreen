@@ -18,7 +18,7 @@ server <- function(input, output, session) {
   import <- shiny::reactiveValues(check = FALSE)
 
   # create a new dataframe based on the old data in a reactive ovject
-  original <- shiny::reactiveValues(newData = NULL)
+  original <- shiny::reactiveValues(new.data = NULL)
 
   # counter to move studies and subset, counter values change depedning on next/previous
   counter <- shiny::reactiveValues(countervalue = 0)
@@ -76,6 +76,15 @@ server <- function(input, output, session) {
     countertot$total <- nrow(datasetInput())
   })
 
+  #change the study with next and previous#######
+  shiny::observeEvent(input$Next, {
+    counter$countervalue <- counter$countervalue + 1
+  })
+
+  shiny::observeEvent(input$Previous, {
+    counter$countervalue <- counter$countervalue - 1
+  })
+
 
   # save files########
   shiny::observe({
@@ -124,13 +133,18 @@ server <- function(input, output, session) {
 
   # progress displayed based on counter and percentage #######
   output$progress <- shiny::renderText({
-    percent <- round(counter$countervalue / countertot$total * 100, 0)
+    if (isTruthy(input$ref)) {
+    percent <- round(sum(original$new.data$Screen != "To be screened") / countertot$total * 100, 0)
     paste0("<font color=\"#ff3333\"><b>", percent, "%", " ", "screened", "</b></font> <font color=\"#ff3333\"><b>", "(Paper No = ", counter$countervalue, "</b>) </font>")
+    } else if((length(metRDS > 0))){
+      percent <- round(sum(settings.store$new.data$Screen != "To be screened") / countertot$total * 100, 0)
+      paste0("<font color=\"#ff3333\"><b>", percent, "%", " ", "screened", "</b></font> <font color=\"#ff3333\"><b>", "(Paper No = ", counter$countervalue, "</b>) </font>")
+    }
   })
 
   # progress showing######
   shiny::observe({
-    if (isTruthy(input$ref) | (length(metRDS > 0))) {
+    if (length(datasetInput()) > 0 | (length(metRDS > 0))) {
       shinyjs::show("progress")
       shinyjs::show("reject.reason")
     }
@@ -213,17 +227,16 @@ server <- function(input, output, session) {
 
   # create a newversion of the data frame######
   shiny::observeEvent(input$ref, {
-    original$newData <- cbind(datasetInput(),
+    original$new.data <- cbind(datasetInput(),
       Screen = "To be screened",
       Reason = "No reason given"
     )
-    print(original$newData)
   })
 
   # change and save with accept/reject and nodecision######
   shiny::observeEvent(input$Accept, {
     if (isTruthy(input$ref)) {
-      original$newData[counter$countervalue, ]$Screen <- "Accept"
+      original$new.data[counter$countervalue, ]$Screen <- "Accept"
 
       counter$countervalue <- counter$countervalue + 1
       settings.store$counter <- counter$countervalue
@@ -241,14 +254,19 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
-      settings.store$new.data <- original$newData
-      write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "_Screened.csv"),
+      settings.store$new.data <- original$new.data
+
+      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
+        dplyr::rename_all(~ gsub("new.data.", "", .))
+      write.csv(screen.dat,
+        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
+                      "_Screened.csv"),
         row.names = FALSE
       )
 
       saveRDS(shiny::reactiveValuesToList(settings.store),
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "_settings.rds")
+        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
+                      "_settings.rds")
       )
     } else if (length(metRDS > 0)) {
       settings.store$new.data[counter$countervalue, ]$Screen <- "Accept"
@@ -268,11 +286,16 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
-      original$newData <- settings.store$new.data
-      write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
-        file = paste0(settings.store$datapath, "_Screened.csv"),
-        row.names = FALSE
+      original$new.data <- settings.store$new.data
+
+      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
+        dplyr::rename_all(~ gsub("new.data.", "", .))
+      write.csv(screen.dat,
+                file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
+                              "_Screened.csv"),
+                row.names = FALSE
       )
+
       saveRDS(shiny::reactiveValuesToList(settings.store),
         file = paste0(settings.store$datapath, "_settings.rds")
       )
@@ -282,9 +305,9 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$Reject, {
     if (isTruthy(input$ref)) {
-      original$newData[counter$countervalue, ]$Screen <- "Reject"
+      original$new.data[counter$countervalue, ]$Screen <- "Reject"
       if(length(input$reject.reason > 0)){
-        original$newData[counter$countervalue,]$Reason <- input$reject.reason
+        original$new.data[counter$countervalue,]$Reason <- input$reject.reason
       }
 
       counter$countervalue <- counter$countervalue + 1
@@ -303,19 +326,24 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
-      settings.store$new.data <- original$newData
-      write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "_Screened.csv"),
-        row.names = FALSE
+      settings.store$new.data <- original$new.data
+
+      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
+        dplyr::rename_all(~ gsub("new.data.", "", .))
+      write.csv(screen.dat,
+                file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
+                              "_Screened.csv"),
+                row.names = FALSE
       )
 
       saveRDS(shiny::reactiveValuesToList(settings.store),
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "_settings.rds")
+        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
+                      "_settings.rds")
       )
     } else if (length(metRDS > 0)) {
       settings.store$new.data[counter$countervalue, ]$Screen <- "Reject"
       if(length(input$reject.reason > 0)){
-        original$newData[counter$countervalue,]$Reason <- input$reject.reason
+        original$new.data[counter$countervalue,]$Reason <- input$reject.reason
       }
       counter$countervalue <- counter$countervalue + 1
       settings.store$counter <- counter$countervalue
@@ -333,10 +361,13 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
-      original$newData <- settings.store$new.data
-      write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
-        file = paste0(settings.store$datapath, "_Screened.csv"),
-        row.names = FALSE
+      original$new.data <- settings.store$new.data
+      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
+        dplyr::rename_all(~ gsub("new.data.", "", .))
+      write.csv(screen.dat,
+                file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
+                              "_Screened.csv"),
+                row.names = FALSE
       )
       saveRDS(shiny::reactiveValuesToList(settings.store),
         file = paste0(settings.store$datapath, "_settings.rds")
@@ -346,7 +377,7 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$NoDecision, {
     if (isTruthy(input$ref)) {
-      original$newData[counter$countervalue, ]$Screen <- "No Decision"
+      original$new.data[counter$countervalue, ]$Screen <- "No Decision"
 
       counter$countervalue <- counter$countervalue + 1
       settings.store$counter <- counter$countervalue
@@ -364,14 +395,18 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
-      settings.store$new.data <- original$newData
-      write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "_Screened.csv"),
+      settings.store$new.data <- original$new.data
+      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
+        dplyr::rename_all(~ gsub("new.data.", "", .))
+      write.csv(screen.dat,
+        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
+                      "_Screened.csv"),
         row.names = FALSE
       )
 
-            saveRDS(shiny::reactiveValuesToList(settings.store),
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath, "_settings.rds")
+            saveRDS(shiny::reactiveValuesToList(settings.store, all.names = FALSE),
+        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
+                      "_settings.rds")
       )
     } else if (length(metRDS > 0)) {
       settings.store$new.data[counter$countervalue, ]$Screen <- "No Decision"
@@ -391,10 +426,14 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
-      original$newData <- settings.store$new.data
-      write.csv(as.data.frame(shiny::reactiveValuesToList(original)),
-        file = paste0(settings.store$datapath, "_Screened.csv"),
-        row.names = FALSE
+      original$new.data <- settings.store$new.data
+
+      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
+        dplyr::rename_all(~ gsub("new.data.", "", .))
+      write.csv(screen.dat,
+                file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
+                              "_Screened.csv"),
+                row.names = FALSE
       )
       saveRDS(shiny::reactiveValuesToList(settings.store),
         file = paste0(settings.store$datapath, "_settings.rds")
