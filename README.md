@@ -18,22 +18,20 @@ library(metRscreen)
 ```
 
 ## Running metRscreen
-The only function metRscreen is metRscreen(). This can be run without any arguments.
+The only function metRscreen is metRscreen(). The most important argument is "screen.file".
 
 ```{r}
 library(metRscreen)
-metRscreen()
+metRscreen(screen.file = "~/Desktop/Example.csv")
 ```
 
 ## metRscreen arguments
-Alternatively, you can specific rejection reasons as a vector with "reject.list = c()".
+You can give specific rejection reasons as a vector with "reject.list = c()".
 
 ```{r}
-metRscreen(reject.list = c("no control", "wrong study system"))
+metRscreen(screen.file = "~/Desktop/Example.csv", reject.list = c("no control", "wrong study system"))
 ```
 
-You can also load a previous screening iteration by providing the file path to a metRDS file "metRDS = 'path/to/.rds/file'". This will reload metRscreen to the same state as in previous screening iterations (i.e. with the same reject list, hidden paper components, and any previous screening decisions). 
+The .rds file that's produced allows for reloading of previous screening decisions. This will be automatically reloaded the next instance metRscreen is run and will return screening to the same state (i.e. with the same reject list, hidden or showing paper components, and any previous screening decisions). 
 
-```{r}
-metRscreen(metRDS = "~/Desktop/example.rds))
-```
+
