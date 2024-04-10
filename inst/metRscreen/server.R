@@ -167,13 +167,9 @@ server <- function(input, output, session) {
 
   # the dataset is then subsetted to represent the counter #######
   StudyData <- shiny::reactive({
-    if(datasetInput()[counter$countervalue, ]$Screen == "Reject"){
-      shinyjs::show("hist.reason")
-    } else {
-      shinyjs::hide("hist.reason")
-    }
     return(datasetInput()[counter$countervalue, ])
   })
+
 
   # render abstract text highlighted based on search########
   output$abstract <- shiny::renderText({
@@ -193,7 +189,11 @@ server <- function(input, output, session) {
   })
 
   output$hist.reason <- shiny::renderUI({
-    shiny::HTML(paste("<b>Reject Reason:</b>", as.character(StudyData()$Reason)))
+    if(StudyData()$Screen == "Reject"){
+      shiny::HTML(paste("<b>Reject Reason:</b>", as.character(StudyData()$Reason)))
+    } else {
+      shiny::HTML("")
+    }
   })
 
   output$hist.screen <- shiny::renderUI({

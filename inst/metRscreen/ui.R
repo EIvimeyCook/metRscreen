@@ -34,9 +34,7 @@ ui <- function() {
             )
             )
             ),
-            shinyjs::hidden(
-              shiny::htmlOutput("hist.reason")
-            ),
+              shiny::htmlOutput("hist.reason"),
             shinyjs::hidden(
               shiny::htmlOutput("progress")
             )
