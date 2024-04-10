@@ -25,10 +25,17 @@ ui <- function() {
           position = "left",
           open = "open",
           bslib::card(
-            shinyFiles::shinyFilesButton("ref", "Import a .csv",
-              title = NULL,
-              multiple = FALSE,
-              filetype = ".csv"
+            shinyjs::hidden(
+              shiny::tagList(
+                shiny::div(
+                  id = "previous.decisions",
+                  shiny::tags$h5(shiny::HTML("<u><b>Previous screen decisions</b></u>")),
+                  shiny::htmlOutput("hist.screen")
+            )
+            )
+            ),
+            shinyjs::hidden(
+              shiny::htmlOutput("hist.reason")
             ),
             shinyjs::hidden(
               shiny::htmlOutput("progress")
@@ -36,7 +43,7 @@ ui <- function() {
           ),
           bslib::card(
             shinyWidgets::checkboxGroupButtons(
-              inputId = "show_fields",
+              inputId = "show.fields",
               label = character(0),
               choices = c("Title", "Author", "Year", "Journal"),
               status = "primary",
@@ -94,38 +101,25 @@ ui <- function() {
         shiny::htmlOutput("abstract"),
         shiny::htmlOutput("keyword")
       ),
-      shiny::splitLayout(
-        shinyWidgets::actionBttn(
-          inputId = "Reject",
-          label = "Reject",
-          style = "fill",
-          color = "warning",
-          block = T,
-          size = "sm"
-        ),
-        shinyWidgets::actionBttn(
-          inputId = "NoDecision",
-          label = "No Decision",
-          style = "fill",
-          color = "primary",
-          block = T,
-          size = "sm"
-        ),
-        shinyWidgets::actionBttn(
-          inputId = "Accept",
-          label = "Accept",
-          style = "fill",
-          color = "success",
-          block = T,
-          size = "sm"
-        )
+      shinyWidgets::actionGroupButtons(
+        inputIds = c("Reject", "NoDecision", "Accept"),
+        labels = list("Reject", "No Decision", "Accept"),
+        status = c("danger", "primary", "success"),
+        size = "normal"
       ),
+      bslib::layout_column_wrap(
+        width = 1/3,
+      bslib::card(
+        max_height = length(reject.list)*30,
       shinyjs::hidden(
         shinyWidgets::prettyRadioButtons(
         inputId = "reject.reason",
         label = NULL,
         choices = "",
-      ))
+      )
+      )
+      )
+      )
+        )
     )
-  )
 }

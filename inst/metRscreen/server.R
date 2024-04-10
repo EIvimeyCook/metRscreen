@@ -61,22 +61,23 @@ server <- function(input, output, session) {
 
   # input dataframe#######
   datasetInput <- shiny::reactive({
-    shinyFiles::shinyFileChoose(input, "ref",
-      roots = shinyFiles::getVolumes(), session = session,
-      filetype = "csv"
-    )
-    if (length(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath) > 0) {
-      settings.store$datapath <- shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath
-      read.csv(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath)
+    if(is.null(screen.history)) {
+      cat("\nReading in new screening file\n")
+    return(read.csv(screen.file))
+    } else if(!is.null(screen.history)) {
+      settings.store <<- do.call("reactiveValues", readRDS(screen.history))
+      cat("\nReading in saved screening file\n")
+      return(settings.store$new.data)
     }
+
   })
 
   # counter total######
-  shiny::observeEvent(input$ref, {
+  shiny::observe({
     countertot$total <- nrow(datasetInput())
   })
 
-  #change the study with next and previous#######
+  # change the study with next and previous#######
   shiny::observeEvent(input$Next, {
     counter$countervalue <- counter$countervalue + 1
   })
@@ -85,33 +86,58 @@ server <- function(input, output, session) {
     counter$countervalue <- counter$countervalue - 1
   })
 
+  # set boundaries for the counter based on total and reaching zero#######
+  shiny::observeEvent(counter$countervalue, {
+    if (counter$countervalue == 0) {
+      shinyjs::disable("Previous")
+      counter$countervalue <- counter$countervalue + 1
+    } else {
+      shinyjs::enable("Previous")
+    }
 
-  # save files########
+    if (counter$countervalue == countertot$total) {
+      shinyjs::disable("Next")
+      counter$countervalue <- countertot$total
+    } else {
+      shinyjs::enable("Next")
+    }
+  })
+
+  # save files loading ########
+
   shiny::observe({
-    if (length(metRDS > 0) & import$check == "FALSE") {
-      settings.store <<- do.call("reactiveValues", readRDS(metRDS))
-      countertot$total <- nrow(settings.store$new.data)
-      reject.list <<- settings.store$reject.list
+    if (!is.null(screen.history) & import$check == "FALSE") {
+      shinyjs::show("previous.decisions")
+      # update params
+      reject.list <- settings.store$reject.list
       counter$countervalue <- settings.store$counter
+
       shinyWidgets::updateCheckboxGroupButtons(
         session = session,
-        inputId = "show_fields",
-        label = character(0),
-        choices = c("Title", "Author", "Year", "Journal"),
-        status = "primary",
-        selected = settings.store$inputs,
-        justified = "TRUE",
-        checkIcon = list(
-          yes = shiny::icon("square-check"),
-          no = shiny::icon("square")
-        ),
-        size = "sm"
+        inputId = "show.fields",
+        selected = settings.store$inputs
       )
       import$check <- TRUE
     }
   })
 
-  # update radiogroup with improted reasons####
+  # create a newversion of the data frame######
+  shiny::observe({
+    if(is.null(screen.history)){
+    original$new.data <- cbind(
+      datasetInput(),
+      Screen = "To be screened",
+      Reason = "No reason given"
+    )
+    cat("\nCreating new screening output\n")
+    } else {
+      original$new.data <- datasetInput()
+      cat("\nUsing existing screening output\n")
+    }
+  })
+
+
+  # update radiogroup with imported reasons####
   shiny::observe({
     if (length(reject.list > 0)) {
       shinyWidgets::updatePrettyRadioButtons(
@@ -131,59 +157,47 @@ server <- function(input, output, session) {
     }
   })
 
-  # progress displayed based on counter and percentage #######
-  output$progress <- shiny::renderText({
-    if (isTruthy(input$ref)) {
-    percent <- round(sum(original$new.data$Screen != "To be screened") / countertot$total * 100, 0)
-    paste0("<font color=\"#ff3333\"><b>", percent, "%", " ", "screened", "</b></font> <font color=\"#ff3333\"><b>", "(Paper No = ", counter$countervalue, "</b>) </font>")
-    } else if((length(metRDS > 0))){
-      percent <- round(sum(settings.store$new.data$Screen != "To be screened") / countertot$total * 100, 0)
-      paste0("<font color=\"#ff3333\"><b>", percent, "%", " ", "screened", "</b></font> <font color=\"#ff3333\"><b>", "(Paper No = ", counter$countervalue, "</b>) </font>")
-    }
-  })
-
   # progress showing######
   shiny::observe({
-    if (length(datasetInput()) > 0 | (length(metRDS > 0))) {
       shinyjs::show("progress")
-      shinyjs::show("reject.reason")
-    }
-  })
-
-  # set boundaries for the counter based on total and reaching zero
-  shiny::observeEvent(counter$countervalue, {
-    if (counter$countervalue == 0) {
-      counter$countervalue <- counter$countervalue + 1
-
-      if (counter$countervalue > countertot$total) {
-        counter$countervalue <- countertot$total
+      if (length(reject.list > 0)) {
+        shinyjs::show("reject.reason")
       }
-    }
   })
-
 
   # the dataset is then subsetted to represent the counter #######
   StudyData <- shiny::reactive({
-    if (isTruthy(input$ref)) {
-      datasetInput()[counter$countervalue, ]
-    } else if (length(metRDS > 0)) {
-      settings.store$new.data[counter$countervalue, ]
+    if(datasetInput()[counter$countervalue, ]$Screen == "Reject"){
+      shinyjs::show("hist.reason")
+    } else {
+      shinyjs::hide("hist.reason")
     }
+    return(datasetInput()[counter$countervalue, ])
   })
 
   # render abstract text highlighted based on search########
   output$abstract <- shiny::renderText({
-    highlight_text(as.character(StudyData()$Abstract), search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
+    highlight_text(as.character(StudyData()$Abstract),
+                   search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
   })
 
   # render keyword text highlighted based on search######
   output$keyword <- shiny::renderText({
-    highlight_text(as.character(StudyData()$Manual.Tags), search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
+    highlight_text(as.character(StudyData()$Manual.Tags),
+                   search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
   })
 
   # outputs for each section #######
   output$title <- shiny::renderUI({
     shiny::HTML(paste("<b>Title:</b>", as.character(StudyData()$Title)))
+  })
+
+  output$hist.reason <- shiny::renderUI({
+    shiny::HTML(paste("<b>Reject Reason:</b>", as.character(StudyData()$Reason)))
+  })
+
+  output$hist.screen <- shiny::renderUI({
+    shiny::HTML(paste("<b>Screen:</b>", as.character(StudyData()$Screen)))
   })
 
   output$author <- shiny::renderUI({
@@ -198,49 +212,52 @@ server <- function(input, output, session) {
     shiny::HTML(paste("<b>Journal:</b>", as.character(StudyData()$Publication.Title)))
   })
 
-  shiny::observeEvent(input$show_fields,
-    {
-      settings.store$inputs <- input$show_fields
-      if ("Journal" %in% input$show_fields) {
+  # hide or show fields depedning on input#####
+  shiny::observeEvent(input$show.fields, {
+
+       if ("Journal" %in% input$show.fields) {
         shinyjs::show("journal")
       } else {
         shinyjs::hide("journal")
       }
-      if ("Year" %in% input$show_fields) {
+
+      if ("Year" %in% input$show.fields) {
         shinyjs::show("year")
       } else {
         shinyjs::hide("year")
       }
-      if ("Author" %in% input$show_fields) {
+
+      if ("Author" %in% input$show.fields) {
         shinyjs::show("author")
       } else {
         shinyjs::hide("author")
       }
-      if ("Title" %in% input$show_fields) {
+
+      if ("Title" %in% input$show.fields) {
         shinyjs::show("title")
       } else {
         shinyjs::hide("title")
       }
+    settings.store$inputs <<- input$show.fields
     },
     ignoreNULL = FALSE
   )
 
-  # create a newversion of the data frame######
-  shiny::observeEvent(input$ref, {
-    original$new.data <- cbind(datasetInput(),
-      Screen = "To be screened",
-      Reason = "No reason given"
-    )
-  })
-
   # change and save with accept/reject and nodecision######
+
+  #accept
   shiny::observeEvent(input$Accept, {
-    if (isTruthy(input$ref)) {
+
       original$new.data[counter$countervalue, ]$Screen <- "Accept"
-
       counter$countervalue <- counter$countervalue + 1
-      settings.store$counter <- counter$countervalue
 
+      #save data from orginial
+      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
+        dplyr::rename_all(~ gsub("new.data.", "", .))
+
+      write.csv(screen.dat, file = paste0(screen.file, "_Screened.csv"), row.names = FALSE)
+
+      #update buttons on press
       shinyWidgets::updatePrettyRadioButtons(
         session = session,
         inputId = "reject.reason",
@@ -254,60 +271,21 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
+
+      #storing data fro later
+      settings.store$counter <- counter$countervalue
       settings.store$new.data <- original$new.data
-
-      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
-        dplyr::rename_all(~ gsub("new.data.", "", .))
-      write.csv(screen.dat,
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
-                      "_Screened.csv"),
-        row.names = FALSE
-      )
-
       saveRDS(shiny::reactiveValuesToList(settings.store),
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
-                      "_settings.rds")
+        file = paste0(screen.file, "_history.rds")
       )
-    } else if (length(metRDS > 0)) {
-      settings.store$new.data[counter$countervalue, ]$Screen <- "Accept"
-      counter$countervalue <- counter$countervalue + 1
-      settings.store$counter <- counter$countervalue
-
-      shinyWidgets::updatePrettyRadioButtons(
-        session = session,
-        inputId = "reject.reason",
-        choices = c(reject.list),
-        selected = character(0),
-        inline = TRUE,
-        prettyOptions = list(
-          icon = icon("check"),
-          bigger = TRUE,
-          status = "info",
-          animation = "jelly"
-        )
-      )
-      original$new.data <- settings.store$new.data
-
-      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
-        dplyr::rename_all(~ gsub("new.data.", "", .))
-      write.csv(screen.dat,
-                file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
-                              "_Screened.csv"),
-                row.names = FALSE
-      )
-
-      saveRDS(shiny::reactiveValuesToList(settings.store),
-        file = paste0(settings.store$datapath, "_settings.rds")
-      )
-    }
   })
 
 
+  # reject
   shiny::observeEvent(input$Reject, {
-    if (isTruthy(input$ref)) {
       original$new.data[counter$countervalue, ]$Screen <- "Reject"
-      if(length(input$reject.reason > 0)){
-        original$new.data[counter$countervalue,]$Reason <- input$reject.reason
+      if (length(input$reject.reason > 0)) {
+        original$new.data[counter$countervalue, ]$Reason <- input$reject.reason
       }
 
       counter$countervalue <- counter$countervalue + 1
@@ -330,55 +308,16 @@ server <- function(input, output, session) {
 
       screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
         dplyr::rename_all(~ gsub("new.data.", "", .))
-      write.csv(screen.dat,
-                file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
-                              "_Screened.csv"),
-                row.names = FALSE
-      )
+      write.csv(screen.dat, file = paste0(screen.file, "_Screened.csv"), row.names = FALSE)
 
       saveRDS(shiny::reactiveValuesToList(settings.store),
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
-                      "_settings.rds")
+        file = paste0(screen.file, "_history.rds")
       )
-    } else if (length(metRDS > 0)) {
-      settings.store$new.data[counter$countervalue, ]$Screen <- "Reject"
-      if(length(input$reject.reason > 0)){
-        original$new.data[counter$countervalue,]$Reason <- input$reject.reason
-      }
-      counter$countervalue <- counter$countervalue + 1
-      settings.store$counter <- counter$countervalue
-
-      shinyWidgets::updatePrettyRadioButtons(
-        session = session,
-        inputId = "reject.reason",
-        choices = c(reject.list),
-        selected = character(0),
-        inline = TRUE,
-        prettyOptions = list(
-          icon = icon("check"),
-          bigger = TRUE,
-          status = "info",
-          animation = "jelly"
-        )
-      )
-      original$new.data <- settings.store$new.data
-      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
-        dplyr::rename_all(~ gsub("new.data.", "", .))
-      write.csv(screen.dat,
-                file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
-                              "_Screened.csv"),
-                row.names = FALSE
-      )
-      saveRDS(shiny::reactiveValuesToList(settings.store),
-        file = paste0(settings.store$datapath, "_settings.rds")
-      )
-    }
   })
 
+ # no decision
   shiny::observeEvent(input$NoDecision, {
-    if (isTruthy(input$ref)) {
       original$new.data[counter$countervalue, ]$Screen <- "No Decision"
-
       counter$countervalue <- counter$countervalue + 1
       settings.store$counter <- counter$countervalue
 
@@ -396,48 +335,24 @@ server <- function(input, output, session) {
         )
       )
       settings.store$new.data <- original$new.data
-      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
-        dplyr::rename_all(~ gsub("new.data.", "", .))
-      write.csv(screen.dat,
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
-                      "_Screened.csv"),
-        row.names = FALSE
-      )
-
-            saveRDS(shiny::reactiveValuesToList(settings.store, all.names = FALSE),
-        file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
-                      "_settings.rds")
-      )
-    } else if (length(metRDS > 0)) {
-      settings.store$new.data[counter$countervalue, ]$Screen <- "No Decision"
-      counter$countervalue <- counter$countervalue + 1
-      settings.store$counter <- counter$countervalue
-
-      shinyWidgets::updatePrettyRadioButtons(
-        session = session,
-        inputId = "reject.reason",
-        choices = c(reject.list),
-        selected = character(0),
-        inline = TRUE,
-        prettyOptions = list(
-          icon = icon("check"),
-          bigger = TRUE,
-          status = "info",
-          animation = "jelly"
-        )
-      )
-      original$new.data <- settings.store$new.data
 
       screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
         dplyr::rename_all(~ gsub("new.data.", "", .))
-      write.csv(screen.dat,
-                file = paste0(shinyFiles::parseFilePaths(shinyFiles::getVolumes(), input$ref)$datapath,
-                              "_Screened.csv"),
-                row.names = FALSE
-      )
+      write.csv(screen.dat, file = paste0(screen.file, "_Screened.csv"), row.names = FALSE)
+
       saveRDS(shiny::reactiveValuesToList(settings.store),
-        file = paste0(settings.store$datapath, "_settings.rds")
+        file = paste0(screen.file, "_history.rds")
       )
-    }
+  })
+
+  # progress displayed based on counter and percentage #######
+  output$progress <- shiny::renderText({
+    percent <- round(sum(original$new.data$Screen != "To be screened") / countertot$total * 100, 0)
+    paste0("<font color=\"#ff3333\"><b>", percent, "%", " ", "screened", "</b></font> <font color=\"#ff3333\"><b>", "(Paper No = ", counter$countervalue, "</b>) </font>")
+  })
+
+  # app stop on session end######
+  session$onSessionEnded(function() {
+    stopApp()
   })
 }

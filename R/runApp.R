@@ -1,20 +1,27 @@
 #' @title metRscreen
 #' @description The metRscreen shiny app allows you to screen papers via their abstracts and titles and allows for highlighting of keywords in multiple colours.
 #' @return A dataframe of decisioned papers
+#' @param screen.file path to the csv file containing references you wish to screen.
 #' @param reject.list list of rejection reasons to be added to metRscreen, can be left empty
-#' @param metRDS a save state file path to resume screening from a previous metRscreen screen
 #' @export
 
-metRscreen <- function(reject.list = NULL, metRDS = NULL) {
+metRscreen <- function(screen.file, reject.list = NULL) {
   # if data.str if missing, assign an empty data.frame
-  if(missing(reject.list)) reject.list <- NULL
-  if(missing(metRDS)) metRDS <- NULL
+  if (missing(screen.file)) cat("\nError: Please provide a .csv file to screen\n")
+  if (missing(reject.list)) reject.list <- NULL
+
+  if (length(list.files(path = dirname(screen.file), pattern = "\\.rds$")) > 0) {
+    screen.history <- list.files(path = dirname(screen.file), pattern = "\\.rds$", full.names = TRUE)
+  } else {
+    screen.history <- NULL
+  }
 
   # pass data.str into shiny environment
   shiny_env <- 1
-  envir = as.environment(shiny_env)
+  envir <- as.environment(shiny_env)
+  assign("screen.file", screen.file, envir = envir)
   assign("reject.list", reject.list, envir = envir)
-  assign("metRDS", metRDS, envir = envir)
+  assign("screen.history", screen.history, envir = envir)
 
   appDir <- system.file("metRscreen", package = "metRscreen")
   shiny::runApp(appDir, display.mode = "normal")
