@@ -30,11 +30,11 @@ ui <- function() {
                 shiny::div(
                   id = "previous.decisions",
                   shiny::tags$h5(shiny::HTML("<u><b>Previous screen decisions</b></u>")),
-                  shiny::htmlOutput("hist.screen")
+                  shiny::htmlOutput("hist.screen"),
+                  shiny::htmlOutput("hist.reason"),
             )
             )
             ),
-              shiny::htmlOutput("hist.reason"),
             shinyjs::hidden(
               shiny::htmlOutput("progress")
             )
@@ -105,17 +105,11 @@ ui <- function() {
         status = c("danger", "primary", "success"),
         size = "normal"
       ),
-      bslib::layout_column_wrap(
-        width = 1/3,
-      bslib::card(
-        max_height = length(reject.list)*30,
       shinyjs::hidden(
         shinyWidgets::prettyRadioButtons(
         inputId = "reject.reason",
         label = NULL,
         choices = "",
-      )
-      )
       )
       )
         )
