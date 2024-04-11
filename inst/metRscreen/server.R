@@ -8,7 +8,12 @@ server <- function(input, output, session) {
     counter = NULL,
     datapath = NULL,
     new.data = NULL,
-    inputs = NULL
+    inputs = NULL,
+    search1 = NULL,
+    search2 = NULL,
+    search3 = NULL,
+    search4 = NULL,
+    search5 = NULL
   )
 
   # create a counter for the total
@@ -109,7 +114,7 @@ server <- function(input, output, session) {
     if (!is.null(screen.history) & import$check == "FALSE") {
       shinyjs::show("previous.decisions")
       # update params
-      reject.list <- settings.store$reject.list
+      reject.list <<- settings.store$reject.list
       counter$countervalue <- settings.store$counter
 
       shinyWidgets::updateCheckboxGroupButtons(
@@ -118,7 +123,48 @@ server <- function(input, output, session) {
         selected = settings.store$inputs
       )
       import$check <- TRUE
+
+    if(!is.null(settings.store$search1)){
+      shinyWidgets::updateTextInputIcon(
+        session = session,
+        inputId = "search1",
+        value = settings.store$search1
+      )
     }
+
+    if(!is.null(settings.store$search2)){
+      shinyWidgets::updateTextInputIcon(
+        session = session,
+        inputId = "search2",
+        value = settings.store$search2
+      )
+    }
+
+    if(!is.null(settings.store$search3)){
+      shinyWidgets::updateTextInputIcon(
+        session = session,
+        inputId = "search3",
+        value = settings.store$search3
+      )
+    }
+
+    if(!is.null(settings.store$search4)){
+      shinyWidgets::updateTextInputIcon(
+        session = session,
+        inputId = "search4",
+        value = settings.store$search4
+      )
+    }
+
+    if(!is.null(settings.store$search5)){
+      shinyWidgets::updateTextInputIcon(
+        session = session,
+        inputId = "search5",
+        value = settings.store$search5
+      )
+    }
+}
+
   })
 
   # create a newversion of the data frame######
@@ -140,6 +186,7 @@ server <- function(input, output, session) {
   # update radiogroup with imported reasons####
   shiny::observe({
     if (length(reject.list > 0)) {
+      shinyjs::show("reject.reason")
       shinyWidgets::updatePrettyRadioButtons(
         session = session,
         inputId = "reject.reason",
@@ -158,12 +205,7 @@ server <- function(input, output, session) {
   })
 
   # progress showing######
-  shiny::observe({
       shinyjs::show("progress")
-      if (length(reject.list > 0)) {
-        shinyjs::show("reject.reason")
-      }
-  })
 
   # the dataset is then subsetted to represent the counter #######
   StudyData <- shiny::reactive({
@@ -210,6 +252,27 @@ server <- function(input, output, session) {
 
   output$journal <- shiny::renderUI({
     shiny::HTML(paste("<b>Journal:</b>", as.character(StudyData()$Publication.Title)))
+  })
+
+  # input strings are saved#######
+  shiny::observeEvent(input$search1, {
+  settings.store$search1 <- input$search1
+    })
+
+  shiny::observeEvent(input$search2, {
+    settings.store$search2 <- input$search2
+  })
+
+  shiny::observeEvent(input$search3, {
+    settings.store$search3 <- input$search3
+  })
+
+  shiny::observeEvent(input$search4, {
+    settings.store$search4 <- input$search4
+  })
+
+  shiny::observeEvent(input$search5, {
+    settings.store$search5 <- input$search5
   })
 
   # hide or show fields depedning on input#####
