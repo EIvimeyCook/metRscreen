@@ -114,7 +114,12 @@ server <- function(input, output, session) {
     if (!is.null(screen.history) & import$check == "FALSE") {
       shinyjs::show("previous.decisions")
       # update params
+      if(!identical(reject.list,settings.store$reject.list) & !is.null(reject.list)){
+        reject.list <<- reject.list
+      } else {
       reject.list <<- settings.store$reject.list
+      }
+
       counter$countervalue <- settings.store$counter
 
       shinyWidgets::updateCheckboxGroupButtons(
