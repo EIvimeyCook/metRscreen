@@ -1,4 +1,4 @@
-#' @title metRscreen
+#' @title Run the metRscreen paper screening app
 #' @description The metRscreen shiny app allows you to screen papers via their abstracts and titles and allows for highlighting of keywords in multiple colours.
 #' @return A dataframe of decisioned papers
 #' @param screen.file path to the csv file containing references you wish to screen.
