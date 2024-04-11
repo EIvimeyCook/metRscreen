@@ -6,8 +6,16 @@
  <h1>metRscreen</h1>
 </div>
 
-The metRscreen shiny app allows you to screen papers via their abstracts and titles along with highlighting keywords in multiple colours.
+The metRscreen shiny app allows you to screen papers via their abstracts and titles along with highlighting keywords in multiple colours. It currently works best using references exported as a .csv from Zotero. However it should work with most references given in a .csv format - be sure that your data matches the arguments in the app:
 
+```{r}
+Title of MS = "Title"
+Authors of MS = "Author"
+Year of MS = "Publication.Year'
+Publishing Journal = "Publication.Title"
+Abstract of MS = "Abstract"
+Keywords of MS = "Manual.Tags"
+```
 ## Installation
 Currently the metRscreen package is not on CRAN, but you can install the development version from GitHub using the devtools package:
 
