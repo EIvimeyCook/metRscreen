@@ -2,7 +2,7 @@
 #' @description The metRscreen shiny app allows you to screen papers via their abstracts and titles and allows for highlighting of keywords in multiple colours.
 #' @return A dataframe of decisioned papers
 #' @param screen.file path to the csv file containing references you wish to screen.
-#' @param reject.list list of rejection reasons to be added to metRscreen, can be left empty
+#' @param reject.list vector of rejection reasons to be added to metRscreen, can be left empty
 #' @export
 
 metRscreen <- function(screen.file, reject.list = NULL) {

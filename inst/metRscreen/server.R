@@ -214,44 +214,77 @@ server <- function(input, output, session) {
 
 
   # render abstract text highlighted based on search########
-  output$abstract <- shiny::renderText({
-    highlight_text(as.character(StudyData()$Abstract),
-                   search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
+  output$abstract <- shiny::renderUI({
+    shiny::HTML(highlight_text(as.character(StudyData()$Abstract),
+                                              search = list(input$search1,
+                                                            input$search2,
+                                                            input$search3,
+                                                            input$search4,
+                                                            input$search5)))
   })
 
   # render keyword text highlighted based on search######
-  output$keyword <- shiny::renderText({
-    highlight_text(as.character(StudyData()$Manual.Tags),
-                   search = list(input$search1, input$search2, input$search3, input$search4, input$search5))
+  output$keyword <- shiny::renderUI({
+    shiny::HTML(highlight_text(as.character(StudyData()$Manual.Tags),
+                                              search = list(input$search1,
+                                                            input$search2,
+                                                            input$search3,
+                                                            input$search4,
+                                                            input$search5)))
   })
 
   # outputs for each section #######
   output$title <- shiny::renderUI({
-    shiny::HTML(paste("<b>Title:</b>", as.character(StudyData()$Title)))
+    shiny::HTML(paste("<p>",
+                  "<b>Title:</b>",
+                  as.character(StudyData()$Title),
+                  "</p>"
+                  ))
   })
 
   output$hist.reason <- shiny::renderUI({
     if(StudyData()$Screen == "Reject"){
-      shiny::HTML(paste("<b>Reject Reason:</b>", as.character(StudyData()$Reason)))
+      shiny::HTML(paste(
+        "<p>",
+        "<b>Reject Reason:</b>",
+        as.character(StudyData()$Reason),
+        "</p>"
+        ))
     } else {
       shiny::HTML("")
     }
   })
 
   output$hist.screen <- shiny::renderUI({
-    shiny::HTML(paste("<b>Screen:</b>", as.character(StudyData()$Screen)))
+    shiny::HTML(paste("<p>",
+                      "<b>Screen:</b>",
+                      as.character(StudyData()$Screen),
+                      "</p>"
+                      ))
   })
 
   output$author <- shiny::renderUI({
-    shiny::HTML(paste("<b>Author:</b>", as.character(StudyData()$Author)))
+    shiny::HTML(paste("<p>",
+                      "<b>Author:</b>",
+                      as.character(StudyData()$Author),
+                      "</p>"
+                      ))
   })
 
   output$year <- shiny::renderUI({
-    shiny::HTML(paste("<b>Year:</b>", as.character(StudyData()$Publication.Year)))
+    shiny::HTML(paste("<p>",
+                      "<b>Year:</b>",
+                      as.character(StudyData()$Publication.Year),
+                      "</p>"
+                      ))
   })
 
   output$journal <- shiny::renderUI({
-    shiny::HTML(paste("<b>Journal:</b>", as.character(StudyData()$Publication.Title)))
+    shiny::HTML(paste("<p>",
+                      "<b>Journal:</b>",
+                      as.character(StudyData()$Publication.Title),
+                      "</p>"
+                      ))
   })
 
   # input strings are saved#######
@@ -411,7 +444,17 @@ server <- function(input, output, session) {
   # progress displayed based on counter and percentage #######
   output$progress <- shiny::renderText({
     percent <- round(sum(original$new.data$Screen != "To be screened") / countertot$total * 100, 0)
-    paste0("<font color=\"#ff3333\"><b>", percent, "%", " ", "screened", "</b></font> <font color=\"#ff3333\"><b>", "(Paper No = ", counter$countervalue, "</b>) </font>")
+    paste0("<p>",
+           "<font color=\"#ff3333\"><b>",
+           percent,
+           "%",
+           " ",
+           "screened",
+           "</b></font> <font color=\"#ff3333\"><b>",
+           "(Paper No = ",
+           counter$countervalue,
+           "</b>) </font>",
+           "</p>")
   })
 
   # app stop on session end######
