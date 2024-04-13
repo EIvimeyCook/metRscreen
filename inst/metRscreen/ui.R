@@ -32,6 +32,7 @@ ui <- function() {
                   shiny::tags$h5(shiny::HTML("<u><b>Previous screen decisions</b></u>")),
                   shiny::htmlOutput("hist.screen"),
                   shiny::htmlOutput("hist.reason"),
+                  shiny::htmlOutput("screen.comment")
             )
             )
             ),
@@ -111,7 +112,12 @@ ui <- function() {
         label = NULL,
         choices = "",
       )
-      )
+      ),
+      shinyjs::hidden(
+        shinyWidgets::textInputIcon("comments", placeholder =  "Screening comments",
+                                    label = NULL
+                                    )
         )
     )
+  )
 }

@@ -13,7 +13,8 @@ server <- function(input, output, session) {
     search2 = NULL,
     search3 = NULL,
     search4 = NULL,
-    search5 = NULL
+    search5 = NULL,
+    screen.comments = NULL
   )
 
   # create a counter for the total
@@ -168,6 +169,7 @@ server <- function(input, output, session) {
         value = settings.store$search5
       )
     }
+
 }
 
   })
@@ -178,7 +180,8 @@ server <- function(input, output, session) {
     original$new.data <- cbind(
       datasetInput(),
       Screen = "To be screened",
-      Reason = "No reason given"
+      Reason = "No reason given",
+      Comment = "No comments given"
     )
     cat("\nCreating new screening output\n")
     } else {
@@ -211,6 +214,7 @@ server <- function(input, output, session) {
 
   # progress showing######
       shinyjs::show("progress")
+      shinyjs::show("comments")
 
   # the dataset is then subsetted to represent the counter #######
   StudyData <- shiny::reactive({
@@ -267,6 +271,17 @@ server <- function(input, output, session) {
                       "</p>"
                       ))
   })
+
+  output$screen.comment <- shiny::renderUI({
+    shiny::HTML(paste("<p>",
+                      "<b>Comment:</b>",
+                      as.character(StudyData()$Comment),
+                      "</p>"
+    ))
+  })
+
+
+
 
   output$author <- shiny::renderUI({
     shiny::HTML(paste("<p>",
@@ -350,7 +365,10 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$Accept, {
 
       original$new.data[counter$countervalue, ]$Screen <- "Accept"
+      original$new.data[counter$countervalue, ]$Comment <- input$comments
+
       counter$countervalue <- counter$countervalue + 1
+
 
       #save data from orginial
       screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
@@ -373,6 +391,15 @@ server <- function(input, output, session) {
         )
       )
 
+
+      shinyWidgets::updateTextInputIcon(
+        session = session,
+        inputId = "comments",
+        value = character(0),
+        placeholder = "Screening comments",
+        label = NULL
+      )
+
       #storing data fro later
       settings.store$counter <- counter$countervalue
       settings.store$new.data <- original$new.data
@@ -385,9 +412,11 @@ server <- function(input, output, session) {
   # reject
   shiny::observeEvent(input$Reject, {
       original$new.data[counter$countervalue, ]$Screen <- "Reject"
+
       if (length(input$reject.reason > 0)) {
         original$new.data[counter$countervalue, ]$Reason <- input$reject.reason
       }
+      original$new.data[counter$countervalue, ]$Comment <- input$comments
 
       counter$countervalue <- counter$countervalue + 1
       settings.store$counter <- counter$countervalue
@@ -405,6 +434,15 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
+
+      shinyWidgets::updateTextInputIcon(
+        session = session,
+        inputId = "comments",
+        value = character(0),
+        placeholder = "Screening comments",
+        label = NULL
+      )
+
       settings.store$new.data <- original$new.data
 
       screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
@@ -419,6 +457,8 @@ server <- function(input, output, session) {
  # no decision
   shiny::observeEvent(input$NoDecision, {
       original$new.data[counter$countervalue, ]$Screen <- "No Decision"
+      original$new.data[counter$countervalue, ]$Comment <- input$comments
+
       counter$countervalue <- counter$countervalue + 1
       settings.store$counter <- counter$countervalue
 
@@ -435,6 +475,16 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
+
+
+      shinyWidgets::updateTextInputIcon(
+        session = session,
+        inputId = "comments",
+        value = character(0),
+        placeholder = "Screening comments",
+        label = NULL
+      )
+
       settings.store$new.data <- original$new.data
 
       screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
