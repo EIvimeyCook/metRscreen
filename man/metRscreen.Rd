@@ -2,14 +2,14 @@
 % Please edit documentation in R/runApp.R
 \name{metRscreen}
 \alias{metRscreen}
-\title{metRscreen}
+\title{Run the metRscreen paper screening app}
 \usage{
-metRscreen(screen.file, reject.list = NULL)
+metRscreen(screen.file, reject.vec = NULL)
 }
 \arguments{
 \item{screen.file}{path to the csv file containing references you wish to screen.}
 
-\item{reject.list}{list of rejection reasons to be added to metRscreen, can be left empty}
+\item{reject.vec}{vector of rejection reasons to be added to metRscreen, can be left empty}
 }
 \value{
 A dataframe of decisioned papers
