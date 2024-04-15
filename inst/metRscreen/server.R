@@ -205,41 +205,10 @@ server <- function(input, output, session) {
     counter$countervalue <- counter$countervalue - 1
   })
 
-  # set boundaries for the counter based on total and reaching zero#######
-  shiny::observeEvent(counter$countervalue, {
-    if (counter$countervalue == 0) {
-      shinyjs::disable("Previous")
-      counter$countervalue <- counter$countervalue + 1
-    } else {
-      shinyjs::enable("Previous")
-    }
-
-    if (counter$countervalue == countertot$total) {
-      shinyjs::disable("Next")
-      counter$countervalue <- countertot$total
-    } else {
-      shinyjs::enable("Next")
-    }
-  })
   # the dataset is then subsetted to represent the counter #######
   StudyData <- shiny::reactive({
     return(original$new.data[counter$countervalue, ])
   })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   # render abstract text highlighted based on search########
@@ -336,6 +305,15 @@ server <- function(input, output, session) {
     original$new.data[counter$countervalue, ]$Comment <- input$comments
 
     counter$countervalue <- counter$countervalue + 1
+    
+    if (counter$countervalue > countertot$total) {
+      counter$countervalue <- 0
+    }
+    if (counter$countervalue == 0) {
+      counter$countervalue <- counter$countervalue + 1
+    }
+    
+    
 
 
     #save data from orginial
@@ -387,6 +365,15 @@ server <- function(input, output, session) {
 
     counter$countervalue <- counter$countervalue + 1
     settings.store$counter <- counter$countervalue
+    
+    if (counter$countervalue > countertot$total) {
+      counter$countervalue <- 0
+    }
+    if (counter$countervalue == 0) {
+      counter$countervalue <- counter$countervalue + 1
+    }
+    
+    
 
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
@@ -428,6 +415,15 @@ server <- function(input, output, session) {
 
     counter$countervalue <- counter$countervalue + 1
     settings.store$counter <- counter$countervalue
+    
+    if (counter$countervalue > countertot$total) {
+      counter$countervalue <- 0
+    }
+    if (counter$countervalue == 0) {
+      counter$countervalue <- counter$countervalue + 1
+    }
+
+    
 
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
@@ -527,6 +523,23 @@ server <- function(input, output, session) {
            counter$countervalue,
            "</b>) </font>",
            "</p>")
+  })
+  
+  # set boundaries for the counter based on total and reaching zero#######
+  shiny::observeEvent(counter$countervalue, {
+    if (counter$countervalue == 0) {
+      shinyjs::disable("Previous")
+      counter$countervalue <- counter$countervalue + 1
+    } else {
+      shinyjs::enable("Previous")
+    }
+    
+    if (counter$countervalue > countertot$total) {
+      shinyjs::disable("Next")
+      counter$countervalue <- countertot$total
+    } else {
+      shinyjs::enable("Next")
+    }
   })
 
   # app stop on session end######
