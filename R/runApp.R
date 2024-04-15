@@ -12,8 +12,10 @@ metRscreen <- function(screen.file, reject.list = NULL) {
 
   if (length(list.files(path = dirname(screen.file), pattern = "\\.rds$")) > 0) {
     screen.history <- list.files(path = dirname(screen.file), pattern = "\\.rds$", full.names = TRUE)
+    cat("Previous screening history found")
   } else {
     screen.history <- NULL
+    cat("No screening history found")
   }
 
   # pass data.str into shiny environment
