@@ -42,4 +42,8 @@ metRscreen(screen.file = "~/Desktop/Example.csv", reject.list = c("no control", 
 
 The .rds file that's produced allows for reloading of previous screening decisions. This will be automatically reloaded the next instance metRscreen is run and will return screening to the same state (i.e. with the same reject list, hidden or showing paper components, and any previous screening decisions). 
 
+## Coming Soon
+Adding a new argument which allows for non-simulataneous collaborative screening ("collab.names = c()")
+
+
 
