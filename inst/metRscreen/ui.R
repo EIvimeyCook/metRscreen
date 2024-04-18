@@ -34,8 +34,8 @@ ui <- function() {
                   shiny::htmlOutput("hist.reason"),
                   shiny::htmlOutput("screen.comment"),
                   shiny::htmlOutput("name.screener")
-            )
-            )
+                )
+              )
             ),
             shinyjs::hidden(
               shiny::htmlOutput("progress")
@@ -43,12 +43,12 @@ ui <- function() {
           ),
           bslib::card(
             shinyjs::hidden(
-            shiny::radioButtons(
-              inputId = "choose.collab",
-              label = shiny::tags$strong("Who is screening?"),
-              choices = c(""),
-              inline = TRUE
-            )
+              shiny::radioButtons(
+                inputId = "choose.collab",
+                label = shiny::tags$strong("Who is screening?"),
+                choices = c(""),
+                inline = TRUE
+              )
             ),
             shinyWidgets::checkboxGroupButtons(
               inputId = "show.fields",
@@ -70,26 +70,26 @@ ui <- function() {
             shinyWidgets::textInputIcon("search4", "Orange Keyword:", placeholder = NULL),
             shinyWidgets::textInputIcon("search5", "Blue Keyword:", placeholder = NULL),
           ),
-      bslib::card(
-        shiny::splitLayout(
-          shinyWidgets::actionBttn(
-            inputId = "Previous",
-            label = "Previous Study",
-            style = "fill",
-            color = "default",
-            block = T,
-            size = "sm"
-          ),
-          shinyWidgets::actionBttn(
-            inputId = "Next",
-            label = "Next Study",
-            style = "fill",
-            color = "default",
-            block = T,
-            size = "sm"
+          bslib::card(
+            shiny::splitLayout(
+              shinyWidgets::actionBttn(
+                inputId = "Previous",
+                label = "Previous Study",
+                style = "fill",
+                color = "default",
+                block = T,
+                size = "sm"
+              ),
+              shinyWidgets::actionBttn(
+                inputId = "Next",
+                label = "Next Study",
+                style = "fill",
+                color = "default",
+                block = T,
+                size = "sm"
+              )
+            )
           )
-        )
-      )
         ),
       bslib::card(
         max_height = 500,
@@ -117,16 +117,17 @@ ui <- function() {
       ),
       shinyjs::hidden(
         shinyWidgets::prettyRadioButtons(
-        inputId = "reject.reason",
-        label = NULL,
-        choices = "",
-      )
+          inputId = "reject.reason",
+          label = NULL,
+          choices = "",
+        )
       ),
       shinyjs::hidden(
-        shinyWidgets::textInputIcon("comments", placeholder =  "Screening comments",
-                                    label = NULL
-                                    )
+        shinyWidgets::textInputIcon("comments",
+          placeholder = "Screening comments",
+          label = NULL
         )
+      )
     )
   )
 }

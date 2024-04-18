@@ -74,7 +74,7 @@ server <- function(input, output, session) {
   shinyjs::show("progress")
   shinyjs::show("comments")
   shinyjs::show("previous.decisions")
-  
+
   # input dataframe and create saving empty template#######
   shiny::observe({
     if (is.null(screen.history) & import$first.load == TRUE) {
@@ -96,33 +96,36 @@ server <- function(input, output, session) {
     }
 
     # save a temp output
-      screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
-        dplyr::rename_all(~ gsub("new.data.", "", .))
-      write.csv(screen.dat, file = paste0(screen.file, "_Screened.csv"), row.names = FALSE)
-      
-      saveRDS(shiny::reactiveValuesToList(settings.store),
-              file = paste0(screen.file, "_history.rds")
-      )
+    settings.store$counter <- counter$countervalue
+    settings.store$new.data <- original$new.data
+
+    screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
+      dplyr::rename_all(~ gsub("new.data.", "", .))
+    write.csv(screen.dat, file = paste0(screen.file, "_Screened.csv"), row.names = FALSE)
+
+    saveRDS(shiny::reactiveValuesToList(settings.store),
+      file = paste0(screen.file, "_history.rds")
+    )
   })
-  
+
 
   # save files loading ########
   shiny::observe({
     if (!is.null(screen.history) & import$first.import == "TRUE") {
-      
       # update params
-      if(!identical(reject.vec,settings.store$reject.vec) & !is.null(reject.vec)){
+      if (!identical(reject.vec, settings.store$reject.vec) & !is.null(reject.vec)) {
         reject.vec <<- reject.vec
       } else {
         reject.vec <<- settings.store$reject.vec
       }
 
-      print(settings.store$reject.vec)
-      print(settings.store$collab.names)
-      
+      if (!identical(collab.names, settings.store$collab.names) & !is.null(collab.names)) {
+        collab.names <<- collab.names
+      } else {
+        collab.names <<- settings.store$collab.names
+      }
+
       counter$countervalue <- settings.store$counter
-      
-      collab.names <<- settings.store$collab.names
 
       shinyWidgets::updateCheckboxGroupButtons(
         session = session,
@@ -130,7 +133,7 @@ server <- function(input, output, session) {
         selected = settings.store$inputs
       )
 
-      if(!is.null(settings.store$search1)){
+      if (!is.null(settings.store$search1)) {
         shinyWidgets::updateTextInputIcon(
           session = session,
           inputId = "search1",
@@ -138,7 +141,7 @@ server <- function(input, output, session) {
         )
       }
 
-      if(!is.null(settings.store$search2)){
+      if (!is.null(settings.store$search2)) {
         shinyWidgets::updateTextInputIcon(
           session = session,
           inputId = "search2",
@@ -146,7 +149,7 @@ server <- function(input, output, session) {
         )
       }
 
-      if(!is.null(settings.store$search3)){
+      if (!is.null(settings.store$search3)) {
         shinyWidgets::updateTextInputIcon(
           session = session,
           inputId = "search3",
@@ -154,7 +157,7 @@ server <- function(input, output, session) {
         )
       }
 
-      if(!is.null(settings.store$search4)){
+      if (!is.null(settings.store$search4)) {
         shinyWidgets::updateTextInputIcon(
           session = session,
           inputId = "search4",
@@ -162,7 +165,7 @@ server <- function(input, output, session) {
         )
       }
 
-      if(!is.null(settings.store$search5)){
+      if (!is.null(settings.store$search5)) {
         shinyWidgets::updateTextInputIcon(
           session = session,
           inputId = "search5",
@@ -172,20 +175,23 @@ server <- function(input, output, session) {
       import$first.import <- FALSE
     }
   })
-  
+
   # update collab names########
   shiny::observe({
-    if(length(collab.names) != 0){
+    if (length(collab.names) > 0) {
       shinyjs::show("choose.collab")
       shiny::updateRadioButtons(
         session = session,
-        choices =  collab.names,
+        choices = collab.names,
         inputId = "choose.collab",
         selected = character(0)
       )
+      settings.store$collab.names <- collab.names
     }
   })
-  
+
+
+
 
   # update radiogroup with imported reasons####
   shiny::observe({
@@ -194,7 +200,7 @@ server <- function(input, output, session) {
       shinyWidgets::updatePrettyRadioButtons(
         session = session,
         inputId = "reject.reason",
-        choices = c(reject.vec),
+        choices = reject.vec,
         selected = character(0),
         inline = TRUE,
         prettyOptions = list(
@@ -204,15 +210,15 @@ server <- function(input, output, session) {
           animation = "jelly"
         )
       )
-      
+
       settings.store$reject.vec <- reject.vec
     }
   })
-  
-  
-  
-  
-  
+
+
+
+
+
   # counter total######
   shiny::observe({
     countertot$total <- nrow(original$new.data)
@@ -236,34 +242,41 @@ server <- function(input, output, session) {
   # render abstract text highlighted based on search########
   output$abstract <- shiny::renderUI({
     shiny::HTML(highlight_text(as.character(StudyData()$Abstract),
-                               search = list(input$search1,
-                                             input$search2,
-                                             input$search3,
-                                             input$search4,
-                                             input$search5)))
+      search = list(
+        input$search1,
+        input$search2,
+        input$search3,
+        input$search4,
+        input$search5
+      )
+    ))
   })
 
   # render keyword text highlighted based on search######
   output$keyword <- shiny::renderUI({
     shiny::HTML(highlight_text(as.character(StudyData()$Manual.Tags),
-                               search = list(input$search1,
-                                             input$search2,
-                                             input$search3,
-                                             input$search4,
-                                             input$search5)))
+      search = list(
+        input$search1,
+        input$search2,
+        input$search3,
+        input$search4,
+        input$search5
+      )
+    ))
   })
 
   # outputs for each section #######
   output$title <- shiny::renderUI({
-    shiny::HTML(paste("<p>",
-                      "<b>Title:</b>",
-                      as.character(StudyData()$Title),
-                      "</p>"
+    shiny::HTML(paste(
+      "<p>",
+      "<b>Title:</b>",
+      as.character(StudyData()$Title),
+      "</p>"
     ))
   })
 
   output$hist.reason <- shiny::renderUI({
-    if(StudyData()$Screen == "Reject"){
+    if (StudyData()$Screen == "Reject") {
       shiny::HTML(paste(
         "<p>",
         "<b>Reject Reason:</b>",
@@ -276,102 +289,114 @@ server <- function(input, output, session) {
   })
 
   output$hist.screen <- shiny::renderUI({
-    shiny::HTML(paste("<p>",
-                      "<b>Screen:</b>",
-                      as.character(StudyData()$Screen),
-                      "</p>"
+    shiny::HTML(paste(
+      "<p>",
+      "<b>Screen:</b>",
+      as.character(StudyData()$Screen),
+      "</p>"
     ))
   })
 
   output$screen.comment <- shiny::renderUI({
-    if(StudyData()$Comment == "No comments given"){
+    if (StudyData()$Comment == "No comments given") {
       shiny::HTML("")
     } else {
-    shiny::HTML(paste("<p>",
-                      "<b>Comment:</b>",
-                      as.character(StudyData()$Comment),
-                      "</p>"
-    ))
-                      }
+      shiny::HTML(paste(
+        "<p>",
+        "<b>Comment:</b>",
+        as.character(StudyData()$Comment),
+        "</p>"
+      ))
+    }
   })
-  
-  output$screen.comment <- shiny::renderUI({
-    if(StudyData()$Screen.Name == "Insert Screener Name"){
-      shiny::HTML("<p>",
-                  "<b>Screener:</b>",
-                  "No screener identified",
-                  "</p>"
-                  )
+
+  output$name.screener <- shiny::renderUI({
+    if (StudyData()$Screen.Name == "Insert Screener Name") {
+      shiny::HTML(
+        "<p>",
+        "<b>Screener:</b>",
+        "No screener identified",
+        "</p>"
+      )
     } else {
-      shiny::HTML(paste("<p>",
-                        "<b>Screener:</b>",
-                        as.character(StudyData()$Screen.Name),
-                        "</p>"
+      shiny::HTML(paste(
+        "<p>",
+        "<b>Screener:</b>",
+        as.character(StudyData()$Screen.Name),
+        "</p>"
       ))
     }
   })
 
   output$author <- shiny::renderUI({
-    shiny::HTML(paste("<p>",
-                      "<b>Author:</b>",
-                      as.character(StudyData()$Author),
-                      "</p>"
+    shiny::HTML(paste(
+      "<p>",
+      "<b>Author:</b>",
+      as.character(StudyData()$Author),
+      "</p>"
     ))
   })
 
   output$year <- shiny::renderUI({
-    shiny::HTML(paste("<p>",
-                      "<b>Year:</b>",
-                      as.character(StudyData()$Publication.Year),
-                      "</p>"
+    shiny::HTML(paste(
+      "<p>",
+      "<b>Year:</b>",
+      as.character(StudyData()$Publication.Year),
+      "</p>"
     ))
   })
 
   output$journal <- shiny::renderUI({
-    shiny::HTML(paste("<p>",
-                      "<b>Journal:</b>",
-                      as.character(StudyData()$Publication.Title),
-                      "</p>"
+    shiny::HTML(paste(
+      "<p>",
+      "<b>Journal:</b>",
+      as.character(StudyData()$Publication.Title),
+      "</p>"
     ))
   })
   # change and save with accept/reject and nodecision######
+  shiny::observeEvent(input$choose.collab, {
+    print(input$choose.collab)
+  })
 
-  #accept
+
+  # accept
   shiny::observeEvent(input$Accept, {
-     
     original$new.data[counter$countervalue, ]$Screen <- "Accept"
-    if(input$comments != ""){
+    if (input$comments != "") {
       original$new.data[counter$countervalue, ]$Comment <- input$comments
     }
-    
-    
-    if(length(collab.names) != 0){
+
+
+
+    if (length(collab.names) > 0) {
       original$new.data[counter$countervalue, ]$Screen.Name <- input$choose.collab
-      if(is.null(input$choose.collab)){
+      print(input$choose.collab)
+      if (is.null(input$choose.collab)) {
         shiny::showNotification("No screener chosen")
       }
     }
 
     counter$countervalue <- counter$countervalue + 1
-    
+
     if (counter$countervalue > countertot$total) {
       counter$countervalue <- 0
     }
     if (counter$countervalue == 0) {
       counter$countervalue <- counter$countervalue + 1
     }
-  
-    #save data from orginial
+
+    # save data from orginial
     screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
       dplyr::rename_all(~ gsub("new.data.", "", .))
 
     write.csv(screen.dat, file = paste0(screen.file, "_Screened.csv"), row.names = FALSE)
 
-    #update buttons on press to nothing
+    # update buttons on press to nothing
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
       inputId = "reject.reason",
-      choices = c(reject.vec),
+      choices = reject.vec,
       selected = character(0),
       inline = TRUE,
       prettyOptions = list(
@@ -390,12 +415,11 @@ server <- function(input, output, session) {
       label = NULL
     )
 
-    #storing data fro later
+    # storing data fro later
     settings.store$counter <- counter$countervalue
     settings.store$new.data <- original$new.data
-    settings.store$collab.names <- collab.names
     saveRDS(shiny::reactiveValuesToList(settings.store),
-            file = paste0(screen.file, "_history.rds")
+      file = paste0(screen.file, "_history.rds")
     )
   })
 
@@ -407,27 +431,27 @@ server <- function(input, output, session) {
     if (length(input$reject.reason > 0)) {
       original$new.data[counter$countervalue, ]$Reason <- input$reject.reason
     }
-    if(input$comments != ""){
+    if (input$comments != "") {
       original$new.data[counter$countervalue, ]$Comment <- input$comments
     }
-  
-    if(length(collab.names) != 0){
+
+    if (length(collab.names) != 0) {
       original$new.data[counter$countervalue, ]$Screen.Name <- input$choose.collab
-      if(is.null(input$choose.collab)){
+      if (is.null(input$choose.collab)) {
         shiny::showNotification("No screener chosen")
       }
     }
     counter$countervalue <- counter$countervalue + 1
     settings.store$counter <- counter$countervalue
-    
+
     if (counter$countervalue > countertot$total) {
       counter$countervalue <- 0
     }
     if (counter$countervalue == 0) {
       counter$countervalue <- counter$countervalue + 1
     }
-    
-    
+
+
 
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
@@ -452,34 +476,34 @@ server <- function(input, output, session) {
     )
 
     settings.store$new.data <- original$new.data
-    settings.store$collab.names <<- collab.names
+
     screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
       dplyr::rename_all(~ gsub("new.data.", "", .))
     write.csv(screen.dat, file = paste0(screen.file, "_Screened.csv"), row.names = FALSE)
 
     saveRDS(shiny::reactiveValuesToList(settings.store),
-            file = paste0(screen.file, "_history.rds")
+      file = paste0(screen.file, "_history.rds")
     )
   })
 
   # no decision
   shiny::observeEvent(input$NoDecision, {
     original$new.data[counter$countervalue, ]$Screen <- "No Decision"
-    
-    if(input$comments != ""){
-    original$new.data[counter$countervalue, ]$Comment <- input$comments
+
+    if (input$comments != "") {
+      original$new.data[counter$countervalue, ]$Comment <- input$comments
     }
-    
-    if(length(collab.names) != 0){
+
+    if (length(collab.names) != 0) {
       original$new.data[counter$countervalue, ]$Screen.Name <- input$choose.collab
-      if(is.null(input$choose.collab)){
+      if (is.null(input$choose.collab)) {
         shiny::showNotification("No screener chosen")
       }
     }
 
     counter$countervalue <- counter$countervalue + 1
     settings.store$counter <- counter$countervalue
-    
+
     if (counter$countervalue > countertot$total) {
       counter$countervalue <- 0
     }
@@ -487,12 +511,12 @@ server <- function(input, output, session) {
       counter$countervalue <- counter$countervalue + 1
     }
 
-    
+
 
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
       inputId = "reject.reason",
-      choices = c(reject.vec),
+      choices = reject.vec,
       selected = character(0),
       inline = TRUE,
       prettyOptions = list(
@@ -513,44 +537,44 @@ server <- function(input, output, session) {
     )
 
     settings.store$new.data <- original$new.data
-    settings.store$collab.names <<- collab.names
+
     screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
       dplyr::rename_all(~ gsub("new.data.", "", .))
     write.csv(screen.dat, file = paste0(screen.file, "_Screened.csv"), row.names = FALSE)
 
     saveRDS(shiny::reactiveValuesToList(settings.store),
-            file = paste0(screen.file, "_history.rds")
+      file = paste0(screen.file, "_history.rds")
     )
   })
   # hide or show fields depending on input#####
-  shiny::observeEvent(input$show.fields, {
+  shiny::observeEvent(input$show.fields,
+    {
+      if ("Journal" %in% input$show.fields) {
+        shinyjs::show("journal")
+      } else {
+        shinyjs::hide("journal")
+      }
 
-    if ("Journal" %in% input$show.fields) {
-      shinyjs::show("journal")
-    } else {
-      shinyjs::hide("journal")
-    }
+      if ("Year" %in% input$show.fields) {
+        shinyjs::show("year")
+      } else {
+        shinyjs::hide("year")
+      }
 
-    if ("Year" %in% input$show.fields) {
-      shinyjs::show("year")
-    } else {
-      shinyjs::hide("year")
-    }
+      if ("Author" %in% input$show.fields) {
+        shinyjs::show("author")
+      } else {
+        shinyjs::hide("author")
+      }
 
-    if ("Author" %in% input$show.fields) {
-      shinyjs::show("author")
-    } else {
-      shinyjs::hide("author")
-    }
-
-    if ("Title" %in% input$show.fields) {
-      shinyjs::show("title")
-    } else {
-      shinyjs::hide("title")
-    }
-    settings.store$inputs <- input$show.fields
-  },
-  ignoreNULL = FALSE
+      if ("Title" %in% input$show.fields) {
+        shinyjs::show("title")
+      } else {
+        shinyjs::hide("title")
+      }
+      settings.store$inputs <- input$show.fields
+    },
+    ignoreNULL = FALSE
   )
 
   # input strings are saved#######
@@ -576,19 +600,21 @@ server <- function(input, output, session) {
   # progress displayed based on counter and percentage #######
   output$progress <- shiny::renderText({
     percent <- round(sum(original$new.data$Screen != "To be screened") / countertot$total * 100, 0)
-    paste0("<p>",
-           "<font color=\"#ff3333\"><b>",
-           percent,
-           "%",
-           " ",
-           "screened",
-           "</b></font> <font color=\"#ff3333\"><b>",
-           "(Paper No = ",
-           counter$countervalue,
-           "</b>) </font>",
-           "</p>")
+    paste0(
+      "<p>",
+      "<font color=\"#ff3333\"><b>",
+      percent,
+      "%",
+      " ",
+      "screened",
+      "</b></font> <font color=\"#ff3333\"><b>",
+      "(Paper No = ",
+      counter$countervalue,
+      "</b>) </font>",
+      "</p>"
+    )
   })
-  
+
   # set boundaries for the counter based on total and reaching zero#######
   shiny::observeEvent(counter$countervalue, {
     if (counter$countervalue == 0) {
@@ -597,7 +623,7 @@ server <- function(input, output, session) {
     } else {
       shinyjs::enable("Previous")
     }
-    
+
     if (counter$countervalue > countertot$total) {
       shinyjs::disable("Next")
       counter$countervalue <- countertot$total

@@ -12,29 +12,26 @@ metRscreen <- function(screen.file, reject.vec = NULL, collab.names = NULL) {
   if (missing(reject.vec)) reject.vec <- NULL
   if (missing(collab.names)) collab.names <- NULL
 
-  if (length(list.files(path = dirname(screen.file), pattern = "\\.rds$")) > 0) {
-    screen.history <- list.files(path = dirname(screen.file), pattern = "\\.rds$", full.names = TRUE)
-    cat("\nPrevious screening history found\n")
+  if (file.exists(screen.file)) {
+    if (length(list.files(path = dirname(screen.file), pattern = "\\.rds$")) > 0) {
+      screen.history <- list.files(path = dirname(screen.file), pattern = "\\.rds$", full.names = TRUE)
+      cat("\nPrevious screening history found\n")
+    } else {
+      screen.history <- NULL
+      cat("\nNo screening history found\n")
+    }
+
+    # pass data.str into shiny environment
+    shiny_env <- 1
+    envir <- as.environment(shiny_env)
+    assign("screen.file", screen.file, envir = envir)
+    assign("reject.vec", reject.vec, envir = envir)
+    assign("collab.names", collab.names, envir = envir)
+    assign("screen.history", screen.history, envir = envir)
+
+    appDir <- system.file("metRscreen", package = "metRscreen")
+    shiny::runApp(appDir, display.mode = "normal")
   } else {
-    screen.history <- NULL
-    cat("\nNo screening history found\n")
+    cat("\n Error: no file detected. Please select a valid file to screen")
   }
-  
-  if(length(collab.names) < 1){
-    cat("\nCollaborative mode, authors identified:", paste(collab.names), "\n")
-  } else if(length(collab.names) ==1){
-    cat("\n Screener identified, author:", paste(collab.names), "\n")
-  }
-    
-
-  # pass data.str into shiny environment
-  shiny_env <- 1
-  envir <- as.environment(shiny_env)
-  assign("screen.file", screen.file, envir = envir)
-  assign("reject.vec", reject.vec, envir = envir)
-  assign("collab.names", collab.names, envir = envir)
-  assign("screen.history", screen.history, envir = envir)
-
-  appDir <- system.file("metRscreen", package = "metRscreen")
-  shiny::runApp(appDir, display.mode = "normal")
 }
