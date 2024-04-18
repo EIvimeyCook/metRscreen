@@ -355,11 +355,6 @@ server <- function(input, output, session) {
     ))
   })
   # change and save with accept/reject and nodecision######
-  shiny::observeEvent(input$choose.collab, {
-    print(input$choose.collab)
-  })
-
-
   # accept
   shiny::observeEvent(input$Accept, {
     original$new.data[counter$countervalue, ]$Screen <- "Accept"
@@ -371,7 +366,6 @@ server <- function(input, output, session) {
 
     if (length(collab.names) > 0) {
       original$new.data[counter$countervalue, ]$Screen.Name <- input$choose.collab
-      print(input$choose.collab)
       if (is.null(input$choose.collab)) {
         shiny::showNotification("No screener chosen")
       }
