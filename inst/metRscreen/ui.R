@@ -32,7 +32,8 @@ ui <- function() {
                   shiny::tags$h5(shiny::HTML("<u><b>Previous screen decisions</b></u>")),
                   shiny::htmlOutput("hist.screen"),
                   shiny::htmlOutput("hist.reason"),
-                  shiny::htmlOutput("screen.comment")
+                  shiny::htmlOutput("screen.comment"),
+                  shiny::htmlOutput("name.screener")
             )
             )
             ),
@@ -41,6 +42,14 @@ ui <- function() {
             )
           ),
           bslib::card(
+            shinyjs::hidden(
+            shiny::radioButtons(
+              inputId = "choose.collab",
+              label = shiny::tags$strong("Who is screening?"),
+              choices = c(""),
+              inline = TRUE
+            )
+            ),
             shinyWidgets::checkboxGroupButtons(
               inputId = "show.fields",
               label = character(0),

@@ -4,12 +4,14 @@
 \alias{metRscreen}
 \title{Run the metRscreen paper screening app}
 \usage{
-metRscreen(screen.file, reject.vec = NULL)
+metRscreen(screen.file, reject.vec = NULL, collab.names = NULL)
 }
 \arguments{
 \item{screen.file}{path to the csv file containing references you wish to screen.}
 
 \item{reject.vec}{vector of rejection reasons to be added to metRscreen, can be left empty}
+
+\item{collab.names}{vector of names to identify screeners to be added to metRscreen, can be left empty}
 }
 \value{
 A dataframe of decisioned papers
