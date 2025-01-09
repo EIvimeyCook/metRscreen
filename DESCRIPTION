@@ -18,4 +18,5 @@ Imports:
     shinyalert,
     shinyFiles,
     shinyjs,
-    shinyWidgets
+    shinyWidgets,
+    tippy
