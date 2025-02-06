@@ -34,7 +34,7 @@ metRscreen(screen.file = "~/Desktop/Example.csv")
 ```
 
 ## metRscreen arguments
-You can give specific rejection reasons as a vector with "reject.list = c()".
+You can give specific rejection reasons as a vector with "reject.vec = c()".
 
 ```{r}
 metRscreen(screen.file = "~/Desktop/Example.csv", reject.list = c("no control", "wrong study system"))
