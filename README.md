@@ -37,7 +37,7 @@ metRscreen(screen.file = "~/Desktop/Example.csv")
 You can give specific rejection reasons as a vector with "reject.vec = c()".
 
 ```{r}
-metRscreen(screen.file = "~/Desktop/Example.csv", reject.list = c("no control", "wrong study system"))
+metRscreen(screen.file = "~/Desktop/Example.csv", reject.vec = c("no control", "wrong study system"))
 ```
 
 The .rds file that's produced allows for reloading of previous screening decisions. This will be automatically reloaded the next instance metRscreen is run and will return screening to the same state (i.e. with the same reject list, hidden or showing paper components, and any previous screening decisions). 
