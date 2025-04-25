@@ -83,7 +83,7 @@ server <- function(input, output, session) {
         Screen = "To be screened",
         Reason = "No reason given",
         Comment = "No comments given",
-        Screen.Name = "Insert Screener Name"
+        Screen.Name = "No screener name given"
       )
       import$first.load <- FALSE
       cat("\nReading in new screening file and creating new screening output(s)\n")
@@ -275,17 +275,14 @@ server <- function(input, output, session) {
     ))
   })
 
+  #error
   output$hist.reason <- shiny::renderUI({
-    if (StudyData()$Screen == "Reject") {
       shiny::HTML(paste(
         "<p>",
         "<b>Reject Reason:</b>",
         as.character(StudyData()$Reason),
         "</p>"
       ))
-    } else {
-      shiny::HTML("")
-    }
   })
 
   output$hist.screen <- shiny::renderUI({
@@ -298,34 +295,21 @@ server <- function(input, output, session) {
   })
 
   output$screen.comment <- shiny::renderUI({
-    if (StudyData()$Comment == "No comments given") {
-      shiny::HTML("")
-    } else {
       shiny::HTML(paste(
         "<p>",
         "<b>Comment:</b>",
         as.character(StudyData()$Comment),
         "</p>"
       ))
-    }
   })
 
   output$name.screener <- shiny::renderUI({
-    if (StudyData()$Screen.Name == "Insert Screener Name") {
-      shiny::HTML(
-        "<p>",
-        "<b>Screener:</b>",
-        "No screener identified",
-        "</p>"
-      )
-    } else {
       shiny::HTML(paste(
         "<p>",
         "<b>Screener:</b>",
         as.character(StudyData()$Screen.Name),
         "</p>"
       ))
-    }
   })
 
   output$author <- shiny::renderUI({
@@ -374,7 +358,24 @@ server <- function(input, output, session) {
     counter$countervalue <- counter$countervalue + 1
 
     if (counter$countervalue > countertot$total) {
-      counter$countervalue <- 0
+      shinyalert::shinyalert(
+        title = "Congratulations",
+        text = "You've finished screening all papers!",
+        size = "s", 
+        closeOnEsc = TRUE,
+        closeOnClickOutside = TRUE,
+        html = FALSE,
+        type = "success",
+        showConfirmButton = TRUE,
+        showCancelButton = FALSE,
+        confirmButtonText = "OK",
+        confirmButtonCol = "#AEDEF4",
+        timer = 0,
+        imageUrl = "",
+        animation = TRUE
+      )
+      cat(paste("\nCongratulations - you have finished screening",  countertot$total, "papers \n"))
+      counter$countervalue <- countertot$total
     }
     if (counter$countervalue == 0) {
       counter$countervalue <- counter$countervalue + 1
@@ -439,7 +440,24 @@ server <- function(input, output, session) {
     settings.store$counter <- counter$countervalue
 
     if (counter$countervalue > countertot$total) {
-      counter$countervalue <- 0
+      shinyalert::shinyalert(
+        title = "Congratulations",
+        text = "You've finished screening all papers!",
+        size = "s", 
+        closeOnEsc = TRUE,
+        closeOnClickOutside = TRUE,
+        html = FALSE,
+        type = "success",
+        showConfirmButton = TRUE,
+        showCancelButton = FALSE,
+        confirmButtonText = "OK",
+        confirmButtonCol = "#AEDEF4",
+        timer = 0,
+        imageUrl = "",
+        animation = TRUE
+      )
+      cat(paste("\nCongratulations - you have finished screening",  countertot$total, "papers \n"))
+      counter$countervalue <- countertot$total
     }
     if (counter$countervalue == 0) {
       counter$countervalue <- counter$countervalue + 1
@@ -499,7 +517,24 @@ server <- function(input, output, session) {
     settings.store$counter <- counter$countervalue
 
     if (counter$countervalue > countertot$total) {
-      counter$countervalue <- 0
+      shinyalert::shinyalert(
+        title = "Congratulations",
+        text = "You've finished screening all papers!",
+        size = "s", 
+        closeOnEsc = TRUE,
+        closeOnClickOutside = TRUE,
+        html = FALSE,
+        type = "success",
+        showConfirmButton = TRUE,
+        showCancelButton = FALSE,
+        confirmButtonText = "OK",
+        confirmButtonCol = "#AEDEF4",
+        timer = 0,
+        imageUrl = "",
+        animation = TRUE
+      )
+      cat(paste("\nCongratulations - you have finished screening",  countertot$total, "papers \n"))
+      counter$countervalue <- countertot$total
     }
     if (counter$countervalue == 0) {
       counter$countervalue <- counter$countervalue + 1
