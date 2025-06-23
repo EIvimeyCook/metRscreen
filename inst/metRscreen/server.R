@@ -93,6 +93,7 @@ server <- function(input, output, session) {
       cat("\nReading in saved screening file and using existing screening output\n")
       import$first.load <- FALSE
       import$first.import <- TRUE
+      counter$countervalue <- settings.store$counter
     }
 
     # save a temp output
