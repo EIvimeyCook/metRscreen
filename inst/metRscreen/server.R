@@ -278,12 +278,14 @@ server <- function(input, output, session) {
 
   #error
   output$hist.reason <- shiny::renderUI({
+    if(StudyData()$Screen == "Reject"){
       shiny::HTML(paste(
         "<p>",
         "<b>Reject Reason:</b>",
         as.character(StudyData()$Reason),
         "</p>"
       ))
+    }
   })
 
   output$hist.screen <- shiny::renderUI({
