@@ -265,14 +265,21 @@ server <- function(input, output, session) {
       )
     ))
   })
-
-  # outputs for each section #######
+  
+  # render title text highlighted based on search######
   output$title <- shiny::renderUI({
     shiny::HTML(paste(
-      "<p>",
-      "<b>Title:</b>",
-      as.character(StudyData()$Title),
-      "</p>"
+      "<b>",
+      highlight_text(as.character(StudyData()$Title),
+                     search = list(
+                       input$search1,
+                       input$search2,
+                       input$search3,
+                       input$search4,
+                       input$search5
+                     )
+      ),
+      "</b>"
     ))
   })
 
