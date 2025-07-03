@@ -29,6 +29,9 @@ server <- function(input, output, session) {
 
   # create a new dataframe based on the old data in a reactive ovject
   original <- shiny::reactiveValues(new.data = NULL)
+  
+  # create a new dataframe for hcecking
+  check_dat <- shiny::reactiveValues(check = NULL)
 
   # create a temp data file
   temp <- shiny::reactiveValues(import.data = NULL)
@@ -87,25 +90,37 @@ server <- function(input, output, session) {
       )
       import$first.load <- FALSE
       cat("\nReading in new screening file and creating new screening output(s)\n")
-    } else if (!is.null(screen.history)) {
-      settings.store <<- do.call("reactiveValues", readRDS(screen.history))
+    } else if (!is.null(screen.history) & import$first.load == TRUE) {
       
-      if (nrow(settings.store$new.data) == nrow(read.csv(screen.file)) & import$first.load == TRUE) {
+      settings.store <<- do.call("reactiveValues", readRDS(screen.history))
+      check_dat$check <- read.csv(screen.file)
+      
+      if (isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
         original$new.data <- settings.store$new.data
         cat("\nReading in saved screening file and using existing screening output\n")
+        counter$countervalue <- settings.store$counter
         import$first.load <- FALSE
         import$first.import <- TRUE
+        
+      } else if(!isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
         counter$countervalue <- settings.store$counter
-      } else if (nrow(settings.store$new.data) != nrow(read.csv(screen.file)) & import$first.load == TRUE) {
-        original$new.data <- cbind(
-          read.csv(screen.file),
-          Screen = "To be screened",
-          Reason = "No reason given",
-          Comment = "No comments given",
-          Screen.Name = "No screener name given"
+        cat("\nData frame inconsistencies between saved and loaded data frames - please revert to previous version\n")
+        shinyalert::shinyalert(
+          title = "Warning",
+          text = "Data frame inconsistencies between saved and loaded data frames - please revert to previous version",
+          size = "m",
+          closeOnClickOutside = FALSE,
+          html = TRUE,
+          type = "warning",
+          showConfirmButton = TRUE,
+          showCancelButton = FALSE,
+          confirmButtonText = "OK",
+          confirmButtonCol = "#AEDEF4",
+          animation = TRUE,
+          imageHeight = "88",
+          imageWidth = "80"
         )
-        cat("\nDifferences detected between screening file and stored history. Reading in new screening file and creating new screening output(s)\n")
-        import$first.load <- FALSE
+        shiny::stopApp()
       }
     }
 
@@ -237,6 +252,9 @@ server <- function(input, output, session) {
   # counter total######
   shiny::observe({
     countertot$total <- nrow(original$new.data)
+    if(!isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
+      countertot$total <- 1
+    }
   })
 
   # change the study with next and previous#######
