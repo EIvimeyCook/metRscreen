@@ -87,14 +87,28 @@ server <- function(input, output, session) {
       )
       import$first.load <- FALSE
       cat("\nReading in new screening file and creating new screening output(s)\n")
-    } else if (!is.null(screen.history) & import$first.load == TRUE) {
+    } else if (!is.null(screen.history)) {
       settings.store <<- do.call("reactiveValues", readRDS(screen.history))
-      original$new.data <- settings.store$new.data
-      cat("\nReading in saved screening file and using existing screening output\n")
-      import$first.load <- FALSE
-      import$first.import <- TRUE
-      counter$countervalue <- settings.store$counter
+      
+      if (nrow(settings.store$new.data) == nrow(read.csv(screen.file)) & import$first.load == TRUE) {
+        original$new.data <- settings.store$new.data
+        cat("\nReading in saved screening file and using existing screening output\n")
+        import$first.load <- FALSE
+        import$first.import <- TRUE
+        counter$countervalue <- settings.store$counter
+      } else if (nrow(settings.store$new.data) != nrow(read.csv(screen.file)) & import$first.load == TRUE) {
+        original$new.data <- cbind(
+          read.csv(screen.file),
+          Screen = "To be screened",
+          Reason = "No reason given",
+          Comment = "No comments given",
+          Screen.Name = "No screener name given"
+        )
+        cat("\nDifferences detected between screening file and stored history. Reading in new screening file and creating new screening output(s)\n")
+        import$first.load <- FALSE
+      }
     }
+
 
     # save a temp output
     settings.store$counter <- counter$countervalue
@@ -265,27 +279,27 @@ server <- function(input, output, session) {
       )
     ))
   })
-  
+
   # render title text highlighted based on search######
   output$title <- shiny::renderUI({
     shiny::HTML(paste(
       "<b>",
       highlight_text(as.character(StudyData()$Title),
-                     search = list(
-                       input$search1,
-                       input$search2,
-                       input$search3,
-                       input$search4,
-                       input$search5
-                     )
+        search = list(
+          input$search1,
+          input$search2,
+          input$search3,
+          input$search4,
+          input$search5
+        )
       ),
       "</b>"
     ))
   })
 
-  #error
+  # error
   output$hist.reason <- shiny::renderUI({
-    if(StudyData()$Screen == "Reject"){
+    if (StudyData()$Screen == "Reject") {
       shiny::HTML(paste(
         "<p>",
         "<b>Reject Reason:</b>",
@@ -305,21 +319,21 @@ server <- function(input, output, session) {
   })
 
   output$screen.comment <- shiny::renderUI({
-      shiny::HTML(paste(
-        "<p>",
-        "<b>Comment:</b>",
-        as.character(StudyData()$Comment),
-        "</p>"
-      ))
+    shiny::HTML(paste(
+      "<p>",
+      "<b>Comment:</b>",
+      as.character(StudyData()$Comment),
+      "</p>"
+    ))
   })
 
   output$name.screener <- shiny::renderUI({
-      shiny::HTML(paste(
-        "<p>",
-        "<b>Screener:</b>",
-        as.character(StudyData()$Screen.Name),
-        "</p>"
-      ))
+    shiny::HTML(paste(
+      "<p>",
+      "<b>Screener:</b>",
+      as.character(StudyData()$Screen.Name),
+      "</p>"
+    ))
   })
 
   output$author <- shiny::renderUI({
@@ -371,7 +385,7 @@ server <- function(input, output, session) {
       shinyalert::shinyalert(
         title = "Congratulations",
         text = "You've finished screening all papers!",
-        size = "s", 
+        size = "s",
         closeOnEsc = TRUE,
         closeOnClickOutside = TRUE,
         html = FALSE,
@@ -384,7 +398,7 @@ server <- function(input, output, session) {
         imageUrl = "",
         animation = TRUE
       )
-      cat(paste("\nCongratulations - you have finished screening",  countertot$total, "papers \n"))
+      cat(paste("\nCongratulations - you have finished screening", countertot$total, "papers \n"))
       counter$countervalue <- countertot$total
     }
     if (counter$countervalue == 0) {
@@ -453,7 +467,7 @@ server <- function(input, output, session) {
       shinyalert::shinyalert(
         title = "Congratulations",
         text = "You've finished screening all papers!",
-        size = "s", 
+        size = "s",
         closeOnEsc = TRUE,
         closeOnClickOutside = TRUE,
         html = FALSE,
@@ -466,7 +480,7 @@ server <- function(input, output, session) {
         imageUrl = "",
         animation = TRUE
       )
-      cat(paste("\nCongratulations - you have finished screening",  countertot$total, "papers \n"))
+      cat(paste("\nCongratulations - you have finished screening", countertot$total, "papers \n"))
       counter$countervalue <- countertot$total
     }
     if (counter$countervalue == 0) {
@@ -530,7 +544,7 @@ server <- function(input, output, session) {
       shinyalert::shinyalert(
         title = "Congratulations",
         text = "You've finished screening all papers!",
-        size = "s", 
+        size = "s",
         closeOnEsc = TRUE,
         closeOnClickOutside = TRUE,
         html = FALSE,
@@ -543,7 +557,7 @@ server <- function(input, output, session) {
         imageUrl = "",
         animation = TRUE
       )
-      cat(paste("\nCongratulations - you have finished screening",  countertot$total, "papers \n"))
+      cat(paste("\nCongratulations - you have finished screening", countertot$total, "papers \n"))
       counter$countervalue <- countertot$total
     }
     if (counter$countervalue == 0) {
