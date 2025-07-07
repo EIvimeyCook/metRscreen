@@ -26,7 +26,7 @@ library(metRscreen)
 ```
 
 ## Running metRscreen
-The only function metRscreen is metRscreen(). The most important argument is "screen.file".
+The only function metRscreen is metRscreen(). The most important argument is "screen.file". Be sure to provide the full file path (e.g., shown in import dataset).
 
 ```{r}
 library(metRscreen)
