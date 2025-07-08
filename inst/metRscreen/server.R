@@ -4,7 +4,7 @@ server <- function(input, output, session) {
 
   # settings object
   settings.store <- shiny::reactiveValues(
-    reject.vec = NULL,
+    reject.list = NULL,
     counter = NULL,
     datapath = NULL,
     new.data = NULL,
@@ -152,10 +152,10 @@ server <- function(input, output, session) {
   shiny::observe({
     if (!is.null(screen.history) & import$first.import == "TRUE") {
       # update params
-      if (!identical(reject.vec, settings.store$reject.vec) & !is.null(reject.vec)) {
-        reject.vec <<- reject.vec
+      if (!identical(reject.list, settings.store$reject.list) & !is.null(reject.list)) {
+        reject.list <<- reject.list
       } else {
-        reject.vec <<- settings.store$reject.vec
+        reject.list <<- settings.store$reject.list
       }
 
       if (!identical(collab.names, settings.store$collab.names) & !is.null(collab.names)) {
@@ -234,12 +234,12 @@ server <- function(input, output, session) {
 
   # update radiogroup with imported reasons####
   shiny::observe({
-    if (length(reject.vec > 0)) {
+    if (length(reject.list > 0)) {
       shinyjs::show("reject.reason")
       shinyWidgets::updatePrettyRadioButtons(
         session = session,
         inputId = "reject.reason",
-        choices = reject.vec,
+        choices = reject.list,
         selected = character(0),
         inline = TRUE,
         prettyOptions = list(
@@ -250,7 +250,7 @@ server <- function(input, output, session) {
         )
       )
 
-      settings.store$reject.vec <- reject.vec
+      settings.store$reject.list <- reject.list
     }
   })
 
@@ -430,7 +430,7 @@ server <- function(input, output, session) {
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
       inputId = "reject.reason",
-      choices = reject.vec,
+      choices = reject.list,
       selected = character(0),
       inline = TRUE,
       prettyOptions = list(
@@ -507,7 +507,7 @@ server <- function(input, output, session) {
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
       inputId = "reject.reason",
-      choices = reject.vec,
+      choices = reject.list,
       selected = character(0),
       inline = TRUE,
       prettyOptions = list(
@@ -584,7 +584,7 @@ server <- function(input, output, session) {
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
       inputId = "reject.reason",
-      choices = reject.vec,
+      choices = reject.list,
       selected = character(0),
       inline = TRUE,
       prettyOptions = list(
