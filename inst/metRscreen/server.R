@@ -4,7 +4,7 @@ server <- function(input, output, session) {
 
   # settings object
   settings.store <- shiny::reactiveValues(
-    reject.vec = NULL,
+    reject.list = NULL,
     counter = NULL,
     datapath = NULL,
     new.data = NULL,
@@ -29,6 +29,9 @@ server <- function(input, output, session) {
 
   # create a new dataframe based on the old data in a reactive ovject
   original <- shiny::reactiveValues(new.data = NULL)
+  
+  # create a new dataframe for hcecking
+  check_dat <- shiny::reactiveValues(check = NULL)
 
   # create a temp data file
   temp <- shiny::reactiveValues(import.data = NULL)
@@ -77,6 +80,7 @@ server <- function(input, output, session) {
 
   # input dataframe and create saving empty template#######
   shiny::observe({
+    
     if (is.null(screen.history) & import$first.load == TRUE) {
       original$new.data <- cbind(
         read.csv(screen.file),
@@ -85,16 +89,50 @@ server <- function(input, output, session) {
         Comment = "No comments given",
         Screen.Name = "No screener name given"
       )
+      
       import$first.load <- FALSE
+      countertot$total <- nrow(original$new.data)
       cat("\nReading in new screening file and creating new screening output(s)\n")
+      
     } else if (!is.null(screen.history) & import$first.load == TRUE) {
+      
       settings.store <<- do.call("reactiveValues", readRDS(screen.history))
-      original$new.data <- settings.store$new.data
-      cat("\nReading in saved screening file and using existing screening output\n")
-      import$first.load <- FALSE
-      import$first.import <- TRUE
+      check_dat$check <- read.csv(screen.file)
+      countertot$total <- nrow(settings.store$new.data)
       counter$countervalue <- settings.store$counter
+
+      
+      if (isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
+        
+        original$new.data <- settings.store$new.data
+        
+        import$first.load <- FALSE
+        import$first.import <- TRUE
+        cat("\nReading in saved screening file and using existing screening output\n")
+        
+
+      } else if(!isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
+      
+        cat("\nData frame inconsistencies between saved and loaded data frames - please revert to previous version\n")
+        shinyalert::shinyalert(
+          title = "Warning",
+          text = "Data frame inconsistencies between saved and loaded data frames - please revert to previous version",
+          size = "m",
+          closeOnClickOutside = FALSE,
+          html = TRUE,
+          type = "warning",
+          showConfirmButton = TRUE,
+          showCancelButton = FALSE,
+          confirmButtonText = "OK",
+          confirmButtonCol = "#AEDEF4",
+          animation = TRUE,
+          imageHeight = "88",
+          imageWidth = "80"
+        )
+        shiny::stopApp()
+      }
     }
+
 
     # save a temp output
     settings.store$counter <- counter$countervalue
@@ -114,10 +152,10 @@ server <- function(input, output, session) {
   shiny::observe({
     if (!is.null(screen.history) & import$first.import == "TRUE") {
       # update params
-      if (!identical(reject.vec, settings.store$reject.vec) & !is.null(reject.vec)) {
-        reject.vec <<- reject.vec
+      if (!identical(reject.list, settings.store$reject.list) & !is.null(reject.list)) {
+        reject.list <<- reject.list
       } else {
-        reject.vec <<- settings.store$reject.vec
+        reject.list <<- settings.store$reject.list
       }
 
       if (!identical(collab.names, settings.store$collab.names) & !is.null(collab.names)) {
@@ -196,12 +234,12 @@ server <- function(input, output, session) {
 
   # update radiogroup with imported reasons####
   shiny::observe({
-    if (length(reject.vec > 0)) {
+    if (length(reject.list > 0)) {
       shinyjs::show("reject.reason")
       shinyWidgets::updatePrettyRadioButtons(
         session = session,
         inputId = "reject.reason",
-        choices = reject.vec,
+        choices = reject.list,
         selected = character(0),
         inline = TRUE,
         prettyOptions = list(
@@ -212,17 +250,8 @@ server <- function(input, output, session) {
         )
       )
 
-      settings.store$reject.vec <- reject.vec
+      settings.store$reject.list <- reject.list
     }
-  })
-
-
-
-
-
-  # counter total######
-  shiny::observe({
-    countertot$total <- nrow(original$new.data)
   })
 
   # change the study with next and previous#######
@@ -265,27 +294,27 @@ server <- function(input, output, session) {
       )
     ))
   })
-  
+
   # render title text highlighted based on search######
   output$title <- shiny::renderUI({
     shiny::HTML(paste(
       "<b>",
       highlight_text(as.character(StudyData()$Title),
-                     search = list(
-                       input$search1,
-                       input$search2,
-                       input$search3,
-                       input$search4,
-                       input$search5
-                     )
+        search = list(
+          input$search1,
+          input$search2,
+          input$search3,
+          input$search4,
+          input$search5
+        )
       ),
       "</b>"
     ))
   })
 
-  #error
+  # error
   output$hist.reason <- shiny::renderUI({
-    if(StudyData()$Screen == "Reject"){
+    if (StudyData()$Screen == "Reject") {
       shiny::HTML(paste(
         "<p>",
         "<b>Reject Reason:</b>",
@@ -305,21 +334,21 @@ server <- function(input, output, session) {
   })
 
   output$screen.comment <- shiny::renderUI({
-      shiny::HTML(paste(
-        "<p>",
-        "<b>Comment:</b>",
-        as.character(StudyData()$Comment),
-        "</p>"
-      ))
+    shiny::HTML(paste(
+      "<p>",
+      "<b>Comment:</b>",
+      as.character(StudyData()$Comment),
+      "</p>"
+    ))
   })
 
   output$name.screener <- shiny::renderUI({
-      shiny::HTML(paste(
-        "<p>",
-        "<b>Screener:</b>",
-        as.character(StudyData()$Screen.Name),
-        "</p>"
-      ))
+    shiny::HTML(paste(
+      "<p>",
+      "<b>Screener:</b>",
+      as.character(StudyData()$Screen.Name),
+      "</p>"
+    ))
   })
 
   output$author <- shiny::renderUI({
@@ -371,7 +400,7 @@ server <- function(input, output, session) {
       shinyalert::shinyalert(
         title = "Congratulations",
         text = "You've finished screening all papers!",
-        size = "s", 
+        size = "s",
         closeOnEsc = TRUE,
         closeOnClickOutside = TRUE,
         html = FALSE,
@@ -384,7 +413,7 @@ server <- function(input, output, session) {
         imageUrl = "",
         animation = TRUE
       )
-      cat(paste("\nCongratulations - you have finished screening",  countertot$total, "papers \n"))
+      cat(paste("\nCongratulations - you have finished screening", countertot$total, "papers \n"))
       counter$countervalue <- countertot$total
     }
     if (counter$countervalue == 0) {
@@ -401,7 +430,7 @@ server <- function(input, output, session) {
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
       inputId = "reject.reason",
-      choices = reject.vec,
+      choices = reject.list,
       selected = character(0),
       inline = TRUE,
       prettyOptions = list(
@@ -433,7 +462,7 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$Reject, {
     original$new.data[counter$countervalue, ]$Screen <- "Reject"
 
-    if (length(input$reject.reason > 0)) {
+    if (length(input$reject.reason > 0) & input$reject.reason != "") {
       original$new.data[counter$countervalue, ]$Reason <- input$reject.reason
     }
     if (input$comments != "") {
@@ -453,7 +482,7 @@ server <- function(input, output, session) {
       shinyalert::shinyalert(
         title = "Congratulations",
         text = "You've finished screening all papers!",
-        size = "s", 
+        size = "s",
         closeOnEsc = TRUE,
         closeOnClickOutside = TRUE,
         html = FALSE,
@@ -466,7 +495,7 @@ server <- function(input, output, session) {
         imageUrl = "",
         animation = TRUE
       )
-      cat(paste("\nCongratulations - you have finished screening",  countertot$total, "papers \n"))
+      cat(paste("\nCongratulations - you have finished screening", countertot$total, "papers \n"))
       counter$countervalue <- countertot$total
     }
     if (counter$countervalue == 0) {
@@ -478,7 +507,7 @@ server <- function(input, output, session) {
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
       inputId = "reject.reason",
-      choices = reject.vec,
+      choices = reject.list,
       selected = character(0),
       inline = TRUE,
       prettyOptions = list(
@@ -530,7 +559,7 @@ server <- function(input, output, session) {
       shinyalert::shinyalert(
         title = "Congratulations",
         text = "You've finished screening all papers!",
-        size = "s", 
+        size = "s",
         closeOnEsc = TRUE,
         closeOnClickOutside = TRUE,
         html = FALSE,
@@ -543,7 +572,7 @@ server <- function(input, output, session) {
         imageUrl = "",
         animation = TRUE
       )
-      cat(paste("\nCongratulations - you have finished screening",  countertot$total, "papers \n"))
+      cat(paste("\nCongratulations - you have finished screening", countertot$total, "papers \n"))
       counter$countervalue <- countertot$total
     }
     if (counter$countervalue == 0) {
@@ -555,7 +584,7 @@ server <- function(input, output, session) {
     shinyWidgets::updatePrettyRadioButtons(
       session = session,
       inputId = "reject.reason",
-      choices = reject.vec,
+      choices = reject.list,
       selected = character(0),
       inline = TRUE,
       prettyOptions = list(
