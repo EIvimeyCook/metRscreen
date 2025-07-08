@@ -80,6 +80,7 @@ server <- function(input, output, session) {
 
   # input dataframe and create saving empty template#######
   shiny::observe({
+    
     if (is.null(screen.history) & import$first.load == TRUE) {
       original$new.data <- cbind(
         read.csv(screen.file),
@@ -88,22 +89,30 @@ server <- function(input, output, session) {
         Comment = "No comments given",
         Screen.Name = "No screener name given"
       )
+      
       import$first.load <- FALSE
+      countertot$total <- nrow(original$new.data)
       cat("\nReading in new screening file and creating new screening output(s)\n")
+      
     } else if (!is.null(screen.history) & import$first.load == TRUE) {
       
       settings.store <<- do.call("reactiveValues", readRDS(screen.history))
       check_dat$check <- read.csv(screen.file)
+      countertot$total <- nrow(settings.store$new.data)
+      counter$countervalue <- settings.store$counter
+
       
       if (isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
+        
         original$new.data <- settings.store$new.data
-        cat("\nReading in saved screening file and using existing screening output\n")
-        counter$countervalue <- settings.store$counter
+        
         import$first.load <- FALSE
         import$first.import <- TRUE
+        cat("\nReading in saved screening file and using existing screening output\n")
         
+
       } else if(!isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
-        counter$countervalue <- settings.store$counter
+      
         cat("\nData frame inconsistencies between saved and loaded data frames - please revert to previous version\n")
         shinyalert::shinyalert(
           title = "Warning",
@@ -242,18 +251,6 @@ server <- function(input, output, session) {
       )
 
       settings.store$reject.vec <- reject.vec
-    }
-  })
-
-
-
-
-
-  # counter total######
-  shiny::observe({
-    countertot$total <- nrow(original$new.data)
-    if(!isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
-      countertot$total <- 1
     }
   })
 
@@ -465,7 +462,7 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$Reject, {
     original$new.data[counter$countervalue, ]$Screen <- "Reject"
 
-    if (length(input$reject.reason > 0)) {
+    if (length(input$reject.reason > 0) & input$reject.reason != "") {
       original$new.data[counter$countervalue, ]$Reason <- input$reject.reason
     }
     if (input$comments != "") {
