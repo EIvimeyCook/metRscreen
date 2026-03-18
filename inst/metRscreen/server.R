@@ -236,7 +236,7 @@ server <- function(input, output, session) {
   shiny::observe({
     if (length(reject.list > 0)) {
       shinyjs::show("reject.reason")
-      shinyWidgets::updatePrettyRadioButtons(
+      shinyWidgets::updatePrettyCheckboxGroup(
         session = session,
         inputId = "reject.reason",
         choices = reject.list,
@@ -427,7 +427,7 @@ server <- function(input, output, session) {
     write.csv(screen.dat, file = paste0(screen.file, "_Screened.csv"), row.names = FALSE)
 
     # update buttons on press to nothing
-    shinyWidgets::updatePrettyRadioButtons(
+    shinyWidgets::updatePrettyCheckboxGroup(
       session = session,
       inputId = "reject.reason",
       choices = reject.list,
@@ -462,8 +462,8 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$Reject, {
     original$new.data[counter$countervalue, ]$Screen <- "Reject"
 
-    if (length(input$reject.reason > 0) & input$reject.reason != "") {
-      original$new.data[counter$countervalue, ]$Reason <- input$reject.reason
+    if (length(input$reject.reason > 0)) {
+      original$new.data[counter$countervalue, ]$Reason <- paste(input$reject.reason, collapse = "; ")
     }
     if (input$comments != "") {
       original$new.data[counter$countervalue, ]$Comment <- input$comments
@@ -504,7 +504,7 @@ server <- function(input, output, session) {
 
 
 
-    shinyWidgets::updatePrettyRadioButtons(
+    shinyWidgets::updatePrettyCheckboxGroup(
       session = session,
       inputId = "reject.reason",
       choices = reject.list,
@@ -581,7 +581,7 @@ server <- function(input, output, session) {
 
 
 
-    shinyWidgets::updatePrettyRadioButtons(
+    shinyWidgets::updatePrettyCheckboxGroup(
       session = session,
       inputId = "reject.reason",
       choices = reject.list,
@@ -665,20 +665,41 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$search5, {
     settings.store$search5 <- input$search5
   })
+  
   # progress displayed based on counter and percentage #######
   output$progress <- shiny::renderText({
-    percent <- round(sum(original$new.data$Screen != "To be screened") / countertot$total * 100, 0)
+    data <- original$new.data
+
+    
+    screened     <- sum(data$Screen != "To be screened", na.rm = TRUE)
+    percent      <- round(screened / countertot$total * 100, 0)
+    
+    n_accept     <- sum(data$Screen == "Accept", na.rm = TRUE)
+    n_reject     <- sum(data$Screen == "Reject", na.rm = TRUE)
+    n_nodecision <- sum(data$Screen == "No Decision", na.rm = TRUE)
+    
+    accept_str <- if (isTRUE(screened > 0)) {
+      pct_accept <- round(n_accept / screened * 100, 0)
+      paste0("<br><font color=\"#2ecc71\"><b>Accept: ", n_accept, " (", pct_accept, "%)</b></font>")
+    } else ""
+    
+    reject_str <- if (isTRUE(screened > 0)) {
+      pct_reject <- round(n_reject / screened * 100, 0)
+      paste0("<br><font color=\"#e74c3c\"><b>Reject: ", n_reject, " (", pct_reject, "%)</b></font>")
+    } else ""
+    
+    nodecision_str <- if (isTRUE(screened > 0)) {
+      pct_nodecision <- round(n_nodecision / screened * 100, 0)
+      paste0("<br><font color=\"#3498db\"><b>No Decision: ", n_nodecision, " (", pct_nodecision, "%)</b></font>")
+    } else ""
+    
     paste0(
       "<p>",
-      "<font color=\"#ff3333\"><b>",
-      percent,
-      "%",
-      " ",
-      "screened",
-      "</b></font> <font color=\"#ff3333\"><b>",
-      "(Paper No = ",
-      counter$countervalue,
-      "</b>) </font>",
+      "<font color=\"#ff3333\"><b>", percent, "% screened",
+      " (Paper No = ", counter$countervalue, ")</b></font>",
+      accept_str,
+      reject_str,
+      nodecision_str,
       "</p>"
     )
   })
@@ -698,6 +719,50 @@ server <- function(input, output, session) {
     } else {
       shinyjs::enable("Next")
     }
+  })
+  
+  
+  #reference list on side
+  output$ref_list <- shiny::renderUI({
+    data <- original$new.data
+    shiny::req(data, nrow(data) > 0)
+    
+    screened <- data |>
+      dplyr::filter(Screen != "To be screened") |>
+      dplyr::mutate(row_idx = dplyr::row_number())
+    
+    if (nrow(screened) == 0) return(shiny::p("No papers screened yet."))
+    
+    purrr::pmap(screened, function(Title, Author, Screen, row_idx, ...) {
+      colour <- switch(Screen,
+                       "Accept"      = "#2ecc71",
+                       "Reject"      = "#e74c3c",
+                       "No Decision" = "#3498db"
+      )
+      shiny::tags$div(
+        style = "margin-bottom: 6px;",
+        shiny::actionButton(
+          inputId = paste0("ref_", row_idx),
+          label   = shiny::tags$span(
+            shiny::tags$b(style = paste0("color:", colour), Screen),
+            shiny::tags$br(),
+            shiny::tags$small(paste0(Author, " (", data$Publication.Year[row_idx], ")"))
+          ),
+          style = "width: 100%; text-align: left; background: white; border: 1px solid #ddd;"
+        )
+      )
+    })
+  })
+  
+  shiny::observe({
+    data <- original$new.data
+    screened_rows <- which(data$Screen != "To be screened")
+    
+    purrr::walk(screened_rows, function(i) {
+      shiny::observeEvent(input[[paste0("ref_", i)]], {
+        counter$countervalue <- i
+      }, ignoreInit = TRUE)
+    })
   })
 
   # app stop on session end######
