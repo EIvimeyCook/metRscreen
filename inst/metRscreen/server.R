@@ -29,7 +29,7 @@ server <- function(input, output, session) {
 
   # create a new dataframe based on the old data in a reactive ovject
   original <- shiny::reactiveValues(new.data = NULL)
-  
+
   # create a new dataframe for hcecking
   check_dat <- shiny::reactiveValues(check = NULL)
 
@@ -83,7 +83,6 @@ server <- function(input, output, session) {
 
   # input dataframe and create saving empty template#######
   shiny::observe({
-    
     if (is.null(screen.history) & import$first.load == TRUE) {
       original$new.data <- cbind(
         read.csv(screen.file),
@@ -92,30 +91,24 @@ server <- function(input, output, session) {
         Comment = "No comments given",
         Screen.Name = "No screener name given"
       )
-      
+
       import$first.load <- FALSE
       countertot$total <- nrow(original$new.data)
       cat("\nReading in new screening file and creating new screening output(s)\n")
-      
     } else if (!is.null(screen.history) & import$first.load == TRUE) {
-      
       settings.store <<- do.call("reactiveValues", readRDS(screen.history))
       check_dat$check <- read.csv(screen.file)
       countertot$total <- nrow(settings.store$new.data)
       counter$countervalue <- settings.store$counter
 
-      
+
       if (isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
-        
         original$new.data <- settings.store$new.data
-        
+
         import$first.load <- FALSE
         import$first.import <- TRUE
         cat("\nReading in saved screening file and using existing screening output\n")
-        
-
-      } else if(!isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
-      
+      } else if (!isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
         cat("\nData frame inconsistencies between saved and loaded data frames - please revert to previous version\n")
         shinyalert::shinyalert(
           title = "Warning",
@@ -231,8 +224,6 @@ server <- function(input, output, session) {
       settings.store$collab.names <- collab.names
     }
   })
-
-
 
 
   # update radiogroup with imported reasons####
@@ -389,7 +380,6 @@ server <- function(input, output, session) {
     }
 
 
-
     if (length(collab.names) > 0) {
       original$new.data[counter$countervalue, ]$Screen.Name <- input$choose.collab
       if (is.null(input$choose.collab)) {
@@ -506,7 +496,6 @@ server <- function(input, output, session) {
     }
 
 
-
     shinyWidgets::updatePrettyCheckboxGroup(
       session = session,
       inputId = "reject.reason",
@@ -581,7 +570,6 @@ server <- function(input, output, session) {
     if (counter$countervalue == 0) {
       counter$countervalue <- counter$countervalue + 1
     }
-
 
 
     shinyWidgets::updatePrettyCheckboxGroup(
@@ -668,34 +656,40 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$search5, {
     settings.store$search5 <- input$search5
   })
-  
+
   # progress displayed based on counter and percentage #######
   output$progress <- shiny::renderText({
     data <- original$new.data
 
-    
-    screened     <- sum(data$Screen != "To be screened", na.rm = TRUE)
-    percent      <- round(screened / countertot$total * 100, 0)
-    
-    n_accept     <- sum(data$Screen == "Accept", na.rm = TRUE)
-    n_reject     <- sum(data$Screen == "Reject", na.rm = TRUE)
+
+    screened <- sum(data$Screen != "To be screened", na.rm = TRUE)
+    percent <- round(screened / countertot$total * 100, 0)
+
+    n_accept <- sum(data$Screen == "Accept", na.rm = TRUE)
+    n_reject <- sum(data$Screen == "Reject", na.rm = TRUE)
     n_nodecision <- sum(data$Screen == "No Decision", na.rm = TRUE)
-    
+
     accept_str <- if (isTRUE(screened > 0)) {
       pct_accept <- round(n_accept / screened * 100, 0)
       paste0("<br><font color=\"#2ecc71\"><b>Accept: ", n_accept, " (", pct_accept, "%)</b></font>")
-    } else ""
-    
+    } else {
+      ""
+    }
+
     reject_str <- if (isTRUE(screened > 0)) {
       pct_reject <- round(n_reject / screened * 100, 0)
       paste0("<br><font color=\"#e74c3c\"><b>Reject: ", n_reject, " (", pct_reject, "%)</b></font>")
-    } else ""
-    
+    } else {
+      ""
+    }
+
     nodecision_str <- if (isTRUE(screened > 0)) {
       pct_nodecision <- round(n_nodecision / screened * 100, 0)
       paste0("<br><font color=\"#3498db\"><b>No Decision: ", n_nodecision, " (", pct_nodecision, "%)</b></font>")
-    } else ""
-    
+    } else {
+      ""
+    }
+
     paste0(
       "<p>",
       "<font color=\"#ff3333\"><b>", percent, "% screened",
@@ -723,30 +717,32 @@ server <- function(input, output, session) {
       shinyjs::enable("Next")
     }
   })
-  
-  
-  #reference list on side
+
+
+  # reference list on side
   output$ref_list <- shiny::renderUI({
     data <- original$new.data
     shiny::req(data, nrow(data) > 0)
-    
+
     screened <- data |>
       dplyr::filter(Screen != "To be screened") |>
       dplyr::mutate(row_idx = dplyr::row_number())
-    
-    if (nrow(screened) == 0) return(shiny::p("No papers screened yet."))
-    
+
+    if (nrow(screened) == 0) {
+      return(shiny::p("No papers screened yet."))
+    }
+
     purrr::pmap(screened, function(Title, Author, Screen, row_idx, ...) {
       colour <- switch(Screen,
-                       "Accept"      = "#2ecc71",
-                       "Reject"      = "#e74c3c",
-                       "No Decision" = "#3498db"
+        "Accept"      = "#2ecc71",
+        "Reject"      = "#e74c3c",
+        "No Decision" = "#3498db"
       )
       shiny::tags$div(
         style = "margin-bottom: 6px;",
         shiny::actionButton(
           inputId = paste0("ref_", row_idx),
-          label   = shiny::tags$span(
+          label = shiny::tags$span(
             shiny::tags$b(style = paste0("color:", colour), Screen),
             shiny::tags$br(),
             shiny::tags$small(paste0(Author, " (", data$Publication.Year[row_idx], ")"))
@@ -756,15 +752,18 @@ server <- function(input, output, session) {
       )
     })
   })
-  
+
   shiny::observe({
     data <- original$new.data
     screened_rows <- which(data$Screen != "To be screened")
-    
+
     purrr::walk(screened_rows, function(i) {
-      shiny::observeEvent(input[[paste0("ref_", i)]], {
-        counter$countervalue <- i
-      }, ignoreInit = TRUE)
+      shiny::observeEvent(input[[paste0("ref_", i)]],
+        {
+          counter$countervalue <- i
+        },
+        ignoreInit = TRUE
+      )
     })
   })
 

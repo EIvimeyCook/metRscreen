@@ -18,7 +18,6 @@ ui <- function() {
     }
   });
 ")),
-
     title = "metRscreen",
     shiny::actionButton(
       inputId = "citeme",
@@ -91,11 +90,11 @@ ui <- function() {
               post = "px",
               ticks = FALSE
             ),
-            shinyWidgets::textInputIcon("search1", "Green Keyword:", placeholder = NULL),
-            shinyWidgets::textInputIcon("search2", "Red Keyword:", placeholder = NULL),
-            shinyWidgets::textInputIcon("search3", "Purple Keyword:", placeholder = NULL),
-            shinyWidgets::textInputIcon("search4", "Orange Keyword:", placeholder = NULL),
-            shinyWidgets::textInputIcon("search5", "Blue Keyword:", placeholder = NULL),
+            shinyWidgets::textInputIcon("search1", "Green Keyword:", value = keywords$green %||% ""),
+            shinyWidgets::textInputIcon("search2", "Red Keyword:", value = keywords$red %||% ""),
+            shinyWidgets::textInputIcon("search3", "Purple Keyword:", value = keywords$purple %||% ""),
+            shinyWidgets::textInputIcon("search4", "Orange Keyword:", value = keywords$orange %||% ""),
+            shinyWidgets::textInputIcon("search5", "Blue Keyword:", value = keywords$blue %||% ""),
           ),
           bslib::card(
             shiny::splitLayout(
