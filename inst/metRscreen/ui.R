@@ -125,40 +125,81 @@ ui <- function() {
       shiny::fluidRow(
         shiny::column(
           width = 9,
-          bslib::card(
-            max_height = 500,
-            full_screen = TRUE,
-            style = "overflow-y: auto;",
-            shinyjs::hidden(shiny::htmlOutput("title")),
-            shinyjs::hidden(shiny::htmlOutput("author")),
-            shinyjs::hidden(shiny::htmlOutput("year")),
-            shinyjs::hidden(shiny::htmlOutput("journal")),
-            shiny::htmlOutput("abstract"),
-            shiny::htmlOutput("keyword")
-          ),
           shiny::div(
-            id = "decision_buttons",
-          shinyWidgets::actionGroupButtons(
-            inputIds = c("Reject", "NoDecision", "Accept"),
-            labels = list("Reject", "No Decision", "Accept"),
-            status = c("danger", "primary", "success"),
-            size = "normal"
-          )
-          ),
-          shiny::div(
-            style = "margin-top: 10px;",
-            shinyjs::hidden(
-              shinyWidgets::prettyCheckboxGroup(
-                inputId = "reject.reason",
-                label = NULL,
-                choices = ""
+            style = "display: flex; flex-direction: column;",
+            shiny::div(
+              id = "abstract_card_wrapper",
+              style = "height: 500px; min-height: 150px; overflow-y: auto;",
+              bslib::card(
+                full_screen = FALSE,
+                style = "height: 100%; overflow-y: auto;",
+                shinyjs::hidden(shiny::htmlOutput("title")),
+                shinyjs::hidden(shiny::htmlOutput("author")),
+                shinyjs::hidden(shiny::htmlOutput("year")),
+                shinyjs::hidden(shiny::htmlOutput("journal")),
+                shiny::htmlOutput("abstract"),
+                shiny::htmlOutput("keyword")
               )
             ),
-            shinyjs::hidden(
-              shinyWidgets::textInputIcon(
-                "comments",
-                placeholder = "Screening comments",
-                label = NULL
+            # drag handle
+            shiny::div(
+              id = "drag_handle",
+              style = "height: 8px; background: #dee2e6; cursor: ns-resize;
+                 display: flex; align-items: center; justify-content: center;
+                 border-radius: 4px; margin: 4px 0;",
+              shiny::tags$small("⋯", style = "color: #aaa; line-height: 0;")
+            ),
+            shiny::tags$script(shiny::HTML("
+        (function() {
+          var handle  = document.getElementById('drag_handle');
+          var wrapper = document.getElementById('abstract_card_wrapper');
+          var isDragging = false;
+          var startY, startH;
+
+          handle.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            startY = e.clientY;
+            startH = wrapper.offsetHeight;
+            document.body.style.cursor = 'ns-resize';
+            e.preventDefault();
+          });
+
+          document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            var newH = Math.max(150, startH + (e.clientY - startY));
+            wrapper.style.height = newH + 'px';
+          });
+
+          document.addEventListener('mouseup', function() {
+            isDragging = false;
+            document.body.style.cursor = '';
+          });
+        })();
+      ")),
+            shiny::div(
+              id = "decision_buttons",
+              shinyWidgets::actionGroupButtons(
+                inputIds = c("Reject", "NoDecision", "Accept"),
+                labels = list("Reject", "No Decision", "Accept"),
+                status = c("danger", "primary", "success"),
+                size = "normal"
+              )
+            ),
+            shiny::div(
+              style = "margin-top: 10px;",
+              shinyjs::hidden(
+                shinyWidgets::prettyCheckboxGroup(
+                  inputId = "reject.reason",
+                  label = NULL,
+                  choices = ""
+                )
+              ),
+              shinyjs::hidden(
+                shinyWidgets::textInputIcon(
+                  "comments",
+                  placeholder = "Screening comments",
+                  label = NULL
+                )
               )
             )
           )

@@ -46,7 +46,10 @@ server <- function(input, output, session) {
                            <br>
                            3. To use a wildcard search, enter the * character after the appropriate string. <br>
                           <br>
-                          4. If you want to see author/title/journal/year info, select each component from the checkbox. These are blinded by default",
+                          4. If you want to see author/title/journal/year info, select each component from the checkbox. These are blinded by default.
+      <br>
+      <br>
+      5. You can now make decisions using keyboard shortcuts: y = accept, m = no decision, n = decline",
       type = "info",
       html = T,
       confirmButtonText = "OK"
