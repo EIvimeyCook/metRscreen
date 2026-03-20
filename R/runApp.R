@@ -4,14 +4,15 @@
 #' @param screen.file path to the csv file containing references you wish to screen.
 #' @param reject.list list of rejection reasons to be added to metRscreen, can be left empty
 #' @param collab.names vector of names to identify screeners to be added to metRscreen, can be left empty
+#' @param keywords takes a list of green, red, purple, orange, or blue keywords to add to the highlight word command.
 #' @export
 
-metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL) {
-  # if data.str if missing, assign an empty data.frame
+metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL,
+                       keywords = list(green = NULL, red = NULL, purple = NULL, 
+                                       orange = NULL, blue = NULL)) {
   if (missing(screen.file)) cat("\nError: Please provide a .csv file to screen\n")
   if (missing(reject.list)) reject.list <- NULL
   if (missing(collab.names)) collab.names <- NULL
-
   if (file.exists(screen.file)) {
     if (length(list.files(path = dirname(screen.file), pattern = "\\.rds$")) > 0) {
       screen.history <- list.files(path = dirname(screen.file), pattern = "\\.rds$", full.names = TRUE)
@@ -20,15 +21,13 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL) {
       screen.history <- NULL
       cat("\nNo screening history found\n")
     }
-
-    # pass data.str into shiny environment
     shiny_env <- 1
     envir <- as.environment(shiny_env)
-    assign("screen.file", screen.file, envir = envir)
-    assign("reject.list", reject.list, envir = envir)
-    assign("collab.names", collab.names, envir = envir)
-    assign("screen.history", screen.history, envir = envir)
-
+    assign("screen.file",   screen.file,        envir = envir)
+    assign("reject.list",   reject.list,        envir = envir)
+    assign("collab.names",  collab.names,       envir = envir)
+    assign("screen.history",screen.history,     envir = envir)
+    assign("keywords",      keywords,           envir = envir)
     appDir <- system.file("metRscreen", package = "metRscreen")
     shiny::runApp(appDir, display.mode = "normal")
   } else {
