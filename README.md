@@ -34,10 +34,11 @@ metRscreen(screen.file = "~/Desktop/Example.csv")
 ```
 
 ## metRscreen arguments
-You can give specific rejection reasons as a vector with "reject.list = c()".
+You can give specific rejection reasons as a vector with "reject.list = c()". You can now select multiple rejection reasons together. You can also specify preloaded keywords using the keywords list argument - note that to specify multiple keywords, include a "," in addition to the former keyword in the sequence (e.g. "old,", "young).
 
 ```{r}
-metRscreen(screen.file = "~/Desktop/Example.csv", reject.list = c("no control", "wrong study system"))
+metRscreen(screen.file = "~/Desktop/Examples.csv", reject.list = c("no control", "wrong study system"), keywords = list(green = c("old,", "young"), red = c("parent*")))
+
 ```
 
 The .rds file that's produced allows for reloading of previous screening decisions. This will be automatically reloaded the next instance metRscreen is run and will return screening to the same state (i.e. with the same reject list, hidden or showing paper components, and any previous screening decisions). 
