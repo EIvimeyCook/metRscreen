@@ -26,7 +26,7 @@ library(metRscreen)
 ```
 
 ## Running metRscreen
-The only function metRscreen is metRscreen(). The most important argument is "screen.file".
+The only function metRscreen is metRscreen(). The most important argument is "screen.file". This can be used in conjuction with the here::here(0 package to enable relative pathing. 
 
 ```{r}
 library(metRscreen)
