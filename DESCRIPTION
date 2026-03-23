@@ -1,9 +1,9 @@
 Package: metRscreen
 Title: metRscreen
-Version: 0.0.0.9000
+Version: 0.0.1.0000
 Authors@R: c(
-    person("Ed", "Ivimey-Cook", , "e.ivimeycook@gmail.com", role = c("aut", "cre")),
-    person("Joel", "Pick", , "joel.l.pick@gmail.com", role = "aut")
+    person("Edward R.", "Ivimey-Cook", , "e.ivimeycook@gmail.com", role = c("aut", "cre")),
+    person("Joel L.", "Pick", , "joel.l.pick@gmail.com", role = "aut")
   )
 Description: The metRscreen shiny app allows you to screen papers via their abstracts and titles and allows for highlighting of keywords in multiple colours. 
 License: MIT + file LICENSE
