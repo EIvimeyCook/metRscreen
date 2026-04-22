@@ -6,7 +6,7 @@
  <h1>metRscreen</h1>
 </div>
 
-The metRscreen shiny app allows you to screen papers via their abstracts and titles along with highlighting keywords in multiple colours. It currently works best using references exported as a .csv from Zotero. However it should work with most references given in a .csv format - be sure that your data matches the arguments in the app:
+The metRscreen shiny app allows you to screen papers via their abstracts and titles along with highlighting keywords in multiple colours. It currently works best using references exported as a .csv from Zotero. However it should work with most references given in a .csv format - be sure that your data matches the arguments in the app - NEW! It now also accepts the .RIS format from Zotero. 
 
 ```{r}
 Title of MS = "Title"
