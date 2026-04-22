@@ -46,5 +46,8 @@ The .rds file that's produced allows for reloading of previous screening decisio
 ## Coming Soon
 Adding a new argument which allows for non-simulataneous collaborative screening ("collab.names = c()")
 
+## AI Declaration
+Claude Sonnet 4.6 was used in the latter stages of development. 
+
 
 
