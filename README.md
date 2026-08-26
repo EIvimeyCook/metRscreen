@@ -129,6 +129,9 @@ If metRscreen helps with your work, please cite it (adjust the year as needed):
 > systematic reviews in R.* R package.
 > <https://github.com/EIvimeyCook/metRscreen>
 
+A machine-readable [`CITATION.cff`](CITATION.cff) is included, so GitHub's
+"Cite this repository" button gives formatted APA and BibTeX.
+
 ## License
 
 Released under the [MIT License](LICENSE.md).
