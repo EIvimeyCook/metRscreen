@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: "Ivimey-Cook"
+    given-names: "Edward R."
+    orcid: "https://orcid.org/0000-0003-4910-0443"
+  - family-names: "Pick"
+    given-names: "Joel L."
+    orcid: "https://orcid.org/0000-0002-6295-3742"
+title: "metRscreen: Screening for meta-analysis and systematic reviews in R"
+abstract: "A Shiny application for title and abstract screening, with multi-colour keyword highlighting, custom rejection reasons, and resumable sessions. Accepts Zotero CSV and RIS exports."
+version: 0.0.1.0000
+url: "https://github.com/EIvimeyCook/metRscreen"
+repository-code: "https://github.com/EIvimeyCook/metRscreen"
+license: MIT
+keywords:
+  - "meta-analysis"
+  - "systematic review"
+  - "screening"
+  - "literature review"
+  - "shiny"
+  - "R"

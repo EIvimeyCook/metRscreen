@@ -1,11 +1,16 @@
 Package: metRscreen
-Title: metRscreen
+Title: Title and Abstract Screening for Meta-Analyses and Systematic Reviews
 Version: 0.0.1.0000
 Authors@R: c(
-    person("Edward R.", "Ivimey-Cook", , "e.ivimeycook@gmail.com", role = c("aut", "cre")),
-    person("Joel L.", "Pick", , "joel.l.pick@gmail.com", role = "aut")
+    person("Edward R.", "Ivimey-Cook", , "e.ivimeycook@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-4910-0443")),
+    person("Joel L.", "Pick", , "joel.l.pick@gmail.com", role = "aut",
+           comment = c(ORCID = "0000-0002-6295-3742"))
   )
-Description: The metRscreen shiny app allows you to screen papers via their abstracts and titles and allows for highlighting of keywords in multiple colours. 
+Description: Provides a Shiny application for screening papers by title and
+    abstract, with highlighting of keywords in multiple colours, user-defined
+    rejection reasons, and resumable sessions. Accepts references exported from
+    Zotero in CSV or RIS format.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -20,3 +25,5 @@ Imports:
     shinyjs,
     shinyWidgets,
     tippy
+URL: https://github.com/EIvimeyCook/metRscreen
+BugReports: https://github.com/EIvimeyCook/metRscreen/issues
