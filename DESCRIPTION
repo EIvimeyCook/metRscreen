@@ -19,11 +19,14 @@ Imports:
     bslib,
     dplyr,
     prompter,
+    purrr,
+    readr,
     shiny,
     shinyalert,
     shinyFiles,
     shinyjs,
     shinyWidgets,
+    tibble,
     tippy
 URL: https://github.com/EIvimeyCook/metRscreen
 BugReports: https://github.com/EIvimeyCook/metRscreen/issues
