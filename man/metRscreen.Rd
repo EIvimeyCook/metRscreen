@@ -4,7 +4,12 @@
 \alias{metRscreen}
 \title{Run the metRscreen paper screening app}
 \usage{
-metRscreen(screen.file, reject.list = NULL, collab.names = NULL)
+metRscreen(
+  screen.file,
+  reject.list = NULL,
+  collab.names = NULL,
+  keywords = list(green = NULL, red = NULL, purple = NULL, orange = NULL, blue = NULL)
+)
 }
 \arguments{
 \item{screen.file}{path to the csv file containing references you wish to screen.}
@@ -12,6 +17,8 @@ metRscreen(screen.file, reject.list = NULL, collab.names = NULL)
 \item{reject.list}{list of rejection reasons to be added to metRscreen, can be left empty}
 
 \item{collab.names}{vector of names to identify screeners to be added to metRscreen, can be left empty}
+
+\item{keywords}{takes a list of green, red, purple, orange, or blue keywords to add to the highlight word command.}
 }
 \value{
 A dataframe of decisioned papers
