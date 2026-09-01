@@ -123,7 +123,7 @@ Please file issues and feature requests at
 
 ## Citation
 
-If metRscreen helps with your work, please cite it (adjust the year as needed):
+If metRscreen helps with your work, please cite it:
 
 > Ivimey-Cook, E. R. (2026). *metRscreen: Screening for meta-analysis and
 > systematic reviews in R.* R package.
