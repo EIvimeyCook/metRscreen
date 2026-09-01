@@ -8,7 +8,7 @@ authors:
   - family-names: "Pick"
     given-names: "Joel L."
     orcid: "https://orcid.org/0000-0002-6295-3742"
-title: "metRscreen: Screening for meta-analysis and systematic reviews in R"
+title: "metRscreen: Title and Abstract Screening for Meta-Analyses and Systematic Reviews"
 abstract: "A Shiny application for title and abstract screening, with multi-colour keyword highlighting, custom rejection reasons, and resumable sessions. Accepts Zotero CSV and RIS exports."
 version: 0.0.1.0000
 url: "https://github.com/EIvimeyCook/metRscreen"
