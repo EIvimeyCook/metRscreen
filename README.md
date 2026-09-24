@@ -102,10 +102,10 @@ decisions. This will be automatically reloaded the next instance metRscreen is
 run and will return screening to the same state — the same reject list, hidden or
 showing paper components, and any previous screening decisions.
 
-## Coming soon
+## Now in the development branch
 
-Adding a new argument which allows for non-simultaneous collaborative screening
-(`collab.names = c()`).
+An optino for collaborative screening with the
+`collab.names = c()` argument. Try it out!
 
 ## Bug reports and contributions
 
