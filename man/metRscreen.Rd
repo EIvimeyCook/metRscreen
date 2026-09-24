@@ -16,7 +16,12 @@ metRscreen(
 
 \item{reject.list}{list of rejection reasons to be added to metRscreen, can be left empty}
 
-\item{collab.names}{vector of names to identify screeners to be added to metRscreen, can be left empty}
+\item{collab.names}{vector of screener names to switch on collaborative mode, can be left empty.
+Each screener gets their own files (\verb{<screen.file>_<name>_Screened.csv} and
+\verb{<screen.file>_<name>_history.rds}), you switch screener in the app, and other
+screeners' decisions can be shown or hidden. A combined
+\verb{<screen.file>_Collab_Summary.csv} flags agreements and conflicts. Names are
+remembered, so later sessions can leave this empty or add new screeners.}
 
 \item{keywords}{takes a list of green, red, purple, orange, or blue keywords to add to the highlight word command.}
 }
