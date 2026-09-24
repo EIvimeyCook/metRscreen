@@ -3,7 +3,12 @@
 #' @return A dataframe of decisioned papers
 #' @param screen.file path to the csv file containing references you wish to screen.
 #' @param reject.list list of rejection reasons to be added to metRscreen, can be left empty
-#' @param collab.names vector of names to identify screeners to be added to metRscreen, can be left empty
+#' @param collab.names vector of screener names to switch on collaborative mode, can be left empty.
+#'   Each screener gets their own files (`<screen.file>_<name>_Screened.csv` and
+#'   `<screen.file>_<name>_history.rds`), you switch screener in the app, and other
+#'   screeners' decisions can be shown or hidden. A combined
+#'   `<screen.file>_Collab_Summary.csv` flags agreements and conflicts. Names are
+#'   remembered, so later sessions can leave this empty or add new screeners.
 #' @param keywords takes a list of green, red, purple, orange, or blue keywords to add to the highlight word command.
 #' @export
 
@@ -72,12 +77,38 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL,
   }
   
   if (file.exists(screen.file)) {
-    if (length(list.files(path = dirname(screen.file), pattern = "\\.rds$")) > 0) {
-      screen.history <- list.files(path = dirname(screen.file), pattern = "\\.rds$", full.names = TRUE)
+    # only this file's own history (other .rds files in the folder, e.g. each
+    # collaborator's history, must not be picked up here)
+    history.file <- paste0(screen.file, "_history.rds")
+    if (file.exists(history.file)) {
+      screen.history <- history.file
       cat("\nPrevious screening history found\n")
     } else {
       screen.history <- NULL
       cat("\nNo screening history found\n")
+    }
+
+    # collaborative mode: remember the screeners for this file, adding any new ones
+    collab.file <- paste0(screen.file, "_collaborators.rds")
+    old.collab <- NULL
+    if (file.exists(collab.file)) {
+      old.collab <- readRDS(collab.file)
+    } else if (!is.null(screen.history)) {
+      # screeners named in an older shared (pre-collaborative-mode) session
+      old.collab <- readRDS(screen.history)$collab.names
+    }
+    collab.names <- unique(trimws(as.character(c(old.collab, collab.names))))
+    collab.names <- collab.names[!is.na(collab.names) & collab.names != ""]
+    # each screener's name is used in their file names, so names must stay distinct
+    safe.names <- gsub("^-+|-+$", "", gsub("[^A-Za-z0-9]+", "-", collab.names))
+    if (any(safe.names == "") || anyDuplicated(safe.names)) {
+      stop("Screener names must contain letters or numbers and be distinct once spaces and ",
+           "punctuation are ignored (e.g. 'Joel Pick' and 'Joel-Pick' would share files).",
+           call. = FALSE)
+    }
+    if (length(collab.names) > 0) {
+      saveRDS(collab.names, collab.file)
+      cat("\nCollaborative mode with screeners:", paste(collab.names, collapse = ", "), "\n")
     }
     shiny_env <- 1
     envir <- as.environment(shiny_env)

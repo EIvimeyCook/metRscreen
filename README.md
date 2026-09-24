@@ -46,6 +46,11 @@ Keywords of MS     = "Manual.Tags"
   so exclusions are auditable rather than a single undifferentiated "no".
 - **Resumable sessions.** An `.rds` file records your decisions and is reloaded
   automatically next time, returning the app to exactly the state you left it in.
+- **Collaborative screening.** Name your screeners and each gets their own
+  decision files, so two or more people can screen the same references
+  independently, switch between screeners in the app, optionally reveal each
+  other's decisions, and get a combined file that flags conflicts.
+- **Keyboard shortcuts.** `y` = accept, `m` = no decision, `n` = reject.
 - **Zotero `.csv` and `.RIS` support.** Export straight from your reference
   manager.
 - **Wildcards in keywords.** `parent*` matches parent, parental, parenting.
@@ -79,6 +84,7 @@ metRscreen(screen.file = "~/Desktop/Example.csv")
 | :------- | :------ |
 | `screen.file` | Path to your `.csv` or `.RIS` of references |
 | `reject.list` | Character vector of your own rejection reasons |
+| `collab.names` | Character vector of screener names; switches on [collaborative screening](#collaborative-screening) |
 | `keywords` | Named list of keyword vectors, one element per highlight colour |
 
 You can give specific rejection reasons as a vector with `reject.list = c()`, and
@@ -102,10 +108,101 @@ decisions. This will be automatically reloaded the next instance metRscreen is
 run and will return screening to the same state — the same reject list, hidden or
 showing paper components, and any previous screening decisions.
 
-## Coming soon
+## Collaborative screening
 
-Adding a new argument which allows for non-simultaneous collaborative screening
-(`collab.names = c()`).
+Systematic reviews usually need at least two people to screen every reference
+independently, with disagreements resolved afterwards. Collaborative mode
+supports this: give metRscreen the names of your screeners and each person's
+decisions are kept in their own files.
+
+```r
+metRscreen(
+  screen.file  = "~/Desktop/refs.csv",
+  reject.list  = c("no control", "wrong study system"),
+  collab.names = c("Ed", "Joel")
+)
+```
+
+### How it works
+
+1. **Choose who is screening.** Pick your name under **Who is screening?**.
+   Decisions (buttons or keyboard shortcuts) are blocked until a screener is
+   chosen, so nothing is recorded against the wrong person.
+2. **Screen independently.** Each screener has their own decisions, comments,
+   keyword searches and place in the list. Their name is recorded in the
+   `Screen.Name` column of their file.
+3. **Switch screener at any time.** Selecting a different name saves the
+   current screener and loads the other one, returning to the paper they were
+   last on. A half-typed comment or ticked reject reason is cleared so it can't
+   be recorded against the next person.
+4. **Show or hide other screeners' decisions.** These are **hidden by
+   default**, so screening stays blind. Turn on **Show other screeners'
+   decisions** to see, for the current paper, each other screener's decision,
+   reject reason and comment, and whether you agree (`Agree`, `Conflict` or
+   `Incomplete`). While switched on it refreshes every few seconds, so it picks
+   up collaborators screening at the same time from a shared or synced folder
+   (e.g. Dropbox, OneDrive).
+5. **Resolve conflicts.** Every decision updates a combined summary file (see
+   below) that flags where screeners disagree.
+
+### Files produced
+
+For `screen.file = "refs.csv"` and `collab.names = c("Ed", "Joel Pick")`, these
+are written next to `refs.csv`:
+
+| File | Contents |
+| :--- | :------- |
+| `refs.csv_Ed_Screened.csv` | Ed's decisions, one row per reference |
+| `refs.csv_Ed_history.rds` | Ed's resumable session |
+| `refs.csv_Joel-Pick_Screened.csv` | Joel Pick's decisions (spaces and punctuation in names become `-`) |
+| `refs.csv_Joel-Pick_history.rds` | Joel Pick's resumable session |
+| `refs.csv_Collab_Summary.csv` | Everyone's decisions side by side plus an `Agreement` column |
+| `refs.csv_collaborators.rds` | The screeners for this project |
+
+The summary has `Title`, `Author`, `Publication.Year` and `Publication.Title`,
+then `<name>.Screen`, `<name>.Reason` and `<name>.Comment` for each screener,
+and finally `Agreement`:
+
+- `Agree`: everyone has screened the paper and made the same decision
+- `Conflict`: everyone has screened it but the decisions differ
+- `Incomplete`: at least one screener hasn't screened it yet
+
+To pull out the conflicts to discuss:
+
+```r
+# tidyverse
+library(readr)
+library(dplyr)
+
+summary_dat <- read_csv("~/Desktop/refs.csv_Collab_Summary.csv")
+conflicts <- summary_dat |>
+  filter(Agreement == "Conflict")
+count(summary_dat, Agreement)
+
+# base R
+summary_dat <- read.csv("~/Desktop/refs.csv_Collab_Summary.csv")
+conflicts <- summary_dat[summary_dat$Agreement == "Conflict", ]
+table(summary_dat$Agreement)
+```
+
+### Good to know
+
+- **Screener names are remembered.** In later sessions you can leave
+  `collab.names` out, or pass only new names to add screeners.
+- **Names must be distinct once spaces and punctuation are removed.** For
+  example, `"Joel Pick"` and `"Joel-Pick"` would share files, so `metRscreen()`
+  stops with an error rather than mixing their decisions.
+- **Reject reasons are shared by the whole project.** Keyword searches and
+  shown/hidden fields are saved per screener.
+- **Upgrading from a shared session.** If you previously screened with
+  `collab.names` in a single shared file, each person's earlier decisions (and
+  your keywords and reject reasons) are copied into their own file the first
+  time they are chosen. The old files are left untouched.
+- **Each screener should work in one app window at a time.** Several people can
+  screen at once from a shared folder, but the same screener shouldn't have two
+  sessions open, or the last one to save wins.
+- **Without `collab.names` nothing changes.** Single-screener projects still
+  produce `refs.csv_Screened.csv` and `refs.csv_history.rds`.
 
 ## Bug reports and contributions
 
@@ -138,4 +235,5 @@ Released under the [MIT License](LICENSE.md).
 
 ## AI Declaration
 
-Claude Sonnet 4.6 was used in the latter stages of development.
+Claude Sonnet 4.6 was used in the latter stages of development. Claude
+(Anthropic) was used to develop and test collaborative mode.

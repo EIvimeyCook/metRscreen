@@ -4,8 +4,10 @@ ui <- function() {
     shinyjs::useShinyjs(),
     shiny::tags$script(shiny::HTML("
   $(document).on('keydown', function(e) {
-    var tag = document.activeElement.tagName.toLowerCase();
-    if (tag === 'input' || tag === 'textarea') return;
+    var el = document.activeElement;
+    var tag = el.tagName.toLowerCase();
+    // only ignore shortcuts while typing (ticking a reason or choosing a screener still allows y/m/n)
+    if (tag === 'textarea' || (tag === 'input' && el.type !== 'radio' && el.type !== 'checkbox')) return;
     if (e.key === 'y') $('#Accept').click();
     if (e.key === 'm') $('#NoDecision').click();
     if (e.key === 'n') $('#Reject').click();
@@ -55,6 +57,20 @@ ui <- function() {
             ),
             shinyjs::hidden(
               shiny::htmlOutput("progress")
+            ),
+            # collaborative mode: other screeners' decisions, hidden by default
+            # so that screening stays independent unless you choose to look
+            shinyjs::hidden(
+              shiny::div(
+                id = "collab.panel",
+                shinyWidgets::materialSwitch(
+                  inputId = "show.others",
+                  label = "Show other screeners' decisions",
+                  value = FALSE,
+                  status = "primary"
+                ),
+                shiny::uiOutput("others.decisions")
+              )
             )
           ),
           bslib::card(
@@ -90,11 +106,11 @@ ui <- function() {
               post = "px",
               ticks = FALSE
             ),
-            shinyWidgets::textInputIcon("search1", "Green Keyword:", value = keywords$green %||% ""),
-            shinyWidgets::textInputIcon("search2", "Red Keyword:", value = keywords$red %||% ""),
-            shinyWidgets::textInputIcon("search3", "Purple Keyword:", value = keywords$purple %||% ""),
-            shinyWidgets::textInputIcon("search4", "Orange Keyword:", value = keywords$orange %||% ""),
-            shinyWidgets::textInputIcon("search5", "Blue Keyword:", value = keywords$blue %||% ""),
+            shinyWidgets::textInputIcon("search1", "Green Keyword:", value = or_blank(keywords$green)),
+            shinyWidgets::textInputIcon("search2", "Red Keyword:", value = or_blank(keywords$red)),
+            shinyWidgets::textInputIcon("search3", "Purple Keyword:", value = or_blank(keywords$purple)),
+            shinyWidgets::textInputIcon("search4", "Orange Keyword:", value = or_blank(keywords$orange)),
+            shinyWidgets::textInputIcon("search5", "Blue Keyword:", value = or_blank(keywords$blue)),
           ),
           bslib::card(
             shiny::splitLayout(
