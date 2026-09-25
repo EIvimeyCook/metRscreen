@@ -104,7 +104,7 @@ showing paper components, and any previous screening decisions.
 
 ## Now in the development branch
 
-An optino for collaborative screening with the
+An option now exists for collaborative screening with the
 `collab.names = c()` argument. Try it out!
 
 ## Bug reports and contributions
