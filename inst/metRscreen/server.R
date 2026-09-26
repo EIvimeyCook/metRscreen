@@ -42,6 +42,40 @@ server <- function(input, output, session) {
   collab_mode <- length(collab.names) > 0
   active <- shiny::reactiveValues(user = NULL)
 
+  # double screening: the two screeners assigned to each paper (NULL = everyone screens every paper)
+  if (!exists("collab.assignment") || !collab_mode) collab.assignment <- NULL
+  # rows (papers) the current screener screens
+  my_rows <- shiny::reactive(assigned_rows(collab.assignment, active$user, countertot$total))
+  # view-only browsing of every paper (double screening only): no decisions can be made
+  browse_mode <- shiny::reactive(!is.null(collab.assignment) && isTRUE(input$browse.all))
+  browse <- shiny::reactiveValues(return_to = NULL)
+  # papers Next/Previous move through: every paper while browsing, otherwise the screener's own
+  nav_rows <- shiny::reactive(if (browse_mode()) seq_len(countertot$total) else my_rows())
+  # the next (dir = 1) or previous (dir = -1) paper, or NA if there is none
+  step_to <- function(from, dir) {
+    r <- nav_rows()
+    cand <- if (dir > 0) r[r > from] else rev(r[r < from])
+    if (length(cand)) cand[1] else NA_integer_
+  }
+  # after a decision: move to the screener's next paper, or congratulate them at the end
+  advance_after_decision <- function() {
+    nxt <- step_to(counter$countervalue, 1)
+    if (!is.na(nxt)) {
+      counter$countervalue <- nxt
+      return(invisible(NULL))
+    }
+    n <- length(my_rows())
+    shinyalert::shinyalert(
+      title = "Congratulations",
+      text = if (is.null(collab.assignment)) "You've finished screening all papers!" else paste0("You've reached the last of your ", n, " papers!"),
+      size = "s", closeOnEsc = TRUE, closeOnClickOutside = TRUE, html = FALSE, type = "success",
+      showConfirmButton = TRUE, showCancelButton = FALSE, confirmButtonText = "OK", confirmButtonCol = "#AEDEF4",
+      timer = 0, imageUrl = "", animation = TRUE
+    )
+    cat(paste("\nCongratulations - you have finished screening", n, "papers \n"))
+    invisible(NULL)
+  }
+
   # save the current screening state to the right file(s)
   save_state <- function(summary = FALSE) {
     if (collab_mode) {
@@ -49,7 +83,7 @@ server <- function(input, output, session) {
         return(invisible(NULL))
       }
       save_user_state(screen.file, active$user, shiny::reactiveValuesToList(settings.store))
-      if (summary) write_collab_summary(screen.file, collab.names)
+      if (summary) write_collab_summary(screen.file, collab.names, collab.assignment)
     } else {
       screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
         dplyr::rename_all(~ gsub("new.data.", "", .))
@@ -66,6 +100,14 @@ server <- function(input, output, session) {
       shiny::showNotification("Choose who is screening before making a decision",
         type = "warning"
       )
+      return(FALSE)
+    }
+    if (browse_mode()) {
+      shiny::showNotification("View only: switch off 'Browse all papers' to screen your papers", type = "warning")
+      return(FALSE)
+    }
+    if (!is.null(collab.assignment) && !(counter$countervalue %in% my_rows())) {
+      shiny::showNotification("This paper isn't assigned to you", type = "warning")
       return(FALSE)
     }
     TRUE
@@ -106,7 +148,7 @@ server <- function(input, output, session) {
       5. You can now make decisions using keyboard shortcuts: y = accept, m = no decision, n = decline
       <br>
       <br>
-      6. Collaborative screening: supply collab.names to metRscreen(). Each screener gets their own files and you can switch screener with 'Who is screening?'. Other screeners' decisions are hidden unless you turn on 'Show other screeners' decisions'. A combined file (_Collab_Summary.csv) flags agreements and conflicts.",
+      6. Collaborative screening: supply collab.names to metRscreen(). Each screener gets their own files and you can switch screener with 'Who is screening?'. Other screeners' decisions are hidden unless you turn on 'Show other screeners' decisions'. A combined file (_Collab_Summary.csv) flags agreements and conflicts. With collab.split = 2 each paper is screened by two people and you only see the papers assigned to you ('Browse all papers' lets you read every paper, view only).",
       type = "info",
       html = T,
       confirmButtonText = "OK"
@@ -274,6 +316,7 @@ server <- function(input, output, session) {
     if (length(collab.names) > 0) {
       shinyjs::show("choose.collab")
       shinyjs::show("collab.panel")
+      if (!is.null(collab.assignment)) shinyjs::show("browse.panel")
       shiny::updateRadioButtons(
         session = session,
         choices = collab.names,
@@ -293,7 +336,7 @@ server <- function(input, output, session) {
       return()
     }
 
-    loaded <- load_user_state(screen.file, new_user)
+    loaded <- load_user_state(screen.file, new_user, assigned_rows(collab.assignment, new_user, countertot$total))
 
     if (is.null(loaded$settings)) {
       shinyalert::shinyalert(
@@ -339,9 +382,14 @@ server <- function(input, output, session) {
     }
 
     active$user <- new_user
+    # a new screener starts on their own papers, not in view-only browsing
+    browse$return_to <- NULL
+    if (isTRUE(input$browse.all)) shinyWidgets::updateMaterialSwitch(session = session, inputId = "browse.all", value = FALSE)
     original$new.data <- s$new.data
     countertot$total <- nrow(s$new.data)
-    counter$countervalue <- max(1, min(s$counter, nrow(s$new.data)))
+    rows_new <- assigned_rows(collab.assignment, new_user, nrow(s$new.data))
+    counter$countervalue <- if (isTRUE(s$counter %in% rows_new)) s$counter else first_unscreened(s$new.data, rows_new)
+    if (!length(rows_new)) shiny::showNotification(paste(new_user, "has no papers in the saved split"), type = "warning")
     apply_saved_settings(s)
 
     # don't let a half-written comment or ticked reason carry over to the next screener
@@ -353,6 +401,11 @@ server <- function(input, output, session) {
       session = session, inputId = "reject.reason", choices = reject.list,
       selected = character(0), inline = TRUE,
       prettyOptions = list(icon = icon("check"), bigger = TRUE, status = "info", animation = "jelly")
+    )
+
+    # refresh the combined summary, e.g. to include decisions just pulled from GitHub or synced
+    tryCatch(write_collab_summary(screen.file, collab.names, collab.assignment),
+      error = function(e) shiny::showNotification(paste("Could not update the summary file:", conditionMessage(e)), type = "warning")
     )
 
     cat(paste0("\n", loaded$message, "\n"))
@@ -367,13 +420,15 @@ server <- function(input, output, session) {
 
     i <- counter$countervalue
     shiny::req(i >= 1)
-    others <- setdiff(collab.names, active$user)
+    screeners <- assigned_screeners(collab.assignment, collab.names, i)
+    others <- setdiff(screeners, active$user)
     if (length(others) == 0) {
-      return(shiny::p("No other screeners."))
+      return(shiny::p("No other screeners for this paper."))
     }
 
     title <- as.character(original$new.data$Title[i])
-    own <- if (is.null(active$user)) NA else as.character(original$new.data$Screen[i])
+    # your own decision only counts towards agreement if you screen this paper
+    own <- if (!is.null(active$user) && active$user %in% screeners) as.character(original$new.data$Screen[i])
     decisions <- own
 
     rows <- lapply(others, function(u) {
@@ -438,11 +493,52 @@ server <- function(input, output, session) {
 
   # change the study with next and previous#######
   shiny::observeEvent(input$Next, {
-    counter$countervalue <- counter$countervalue + 1
+    nxt <- step_to(counter$countervalue, 1)
+    if (!is.na(nxt)) counter$countervalue <- nxt
   })
 
   shiny::observeEvent(input$Previous, {
-    counter$countervalue <- counter$countervalue - 1
+    prv <- step_to(counter$countervalue, -1)
+    if (!is.na(prv)) counter$countervalue <- prv
+  })
+
+  # view-only browsing: remember where the screener was and return there afterwards #######
+  shiny::observeEvent(input$browse.all, {
+    if (is.null(collab.assignment)) return()
+    if (isTRUE(input$browse.all)) {
+      browse$return_to <- counter$countervalue
+    } else if (!is.null(browse$return_to)) {
+      r <- my_rows()
+      counter$countervalue <- if (browse$return_to %in% r) browse$return_to else first_unscreened(original$new.data, r)
+      browse$return_to <- NULL
+    }
+  }, ignoreInit = TRUE)
+
+  # grey out the decision buttons while browsing
+  shiny::observe({
+    on <- browse_mode()
+    for (id in c("Accept", "Reject", "NoDecision")) shinyjs::toggleState(id, condition = !on)
+  })
+
+  output$view.only <- shiny::renderUI({
+    shiny::req(browse_mode())
+    shiny::tags$p(
+      style = "color:#e67e22; font-weight:bold; margin-bottom:6px;",
+      shiny::icon("eye"), " View only - switch off 'Browse all papers' to screen your papers"
+    )
+  })
+
+  # who the current paper is assigned to (double screening)
+  output$assigned.to <- shiny::renderUI({
+    shiny::req(!is.null(collab.assignment))
+    i <- counter$countervalue
+    who <- assigned_screeners(collab.assignment, collab.names, i)
+    shiny::req(length(who) == 2)
+    yours <- !is.null(active$user) && active$user %in% who
+    shiny::tags$p(
+      shiny::tags$b("Assigned to: "), paste(who, collapse = " & "),
+      if (!is.null(active$user) && !yours) shiny::tags$i(" (not one of your papers)")
+    )
   })
 
   # the dataset is then subsetted to represent the counter #######
@@ -574,31 +670,8 @@ server <- function(input, output, session) {
       original$new.data[counter$countervalue, ]$Screen.Name <- active$user
     }
 
-    counter$countervalue <- counter$countervalue + 1
-
-    if (counter$countervalue > countertot$total) {
-      shinyalert::shinyalert(
-        title = "Congratulations",
-        text = "You've finished screening all papers!",
-        size = "s",
-        closeOnEsc = TRUE,
-        closeOnClickOutside = TRUE,
-        html = FALSE,
-        type = "success",
-        showConfirmButton = TRUE,
-        showCancelButton = FALSE,
-        confirmButtonText = "OK",
-        confirmButtonCol = "#AEDEF4",
-        timer = 0,
-        imageUrl = "",
-        animation = TRUE
-      )
-      cat(paste("\nCongratulations - you have finished screening", countertot$total, "papers \n"))
-      counter$countervalue <- countertot$total
-    }
-    if (counter$countervalue == 0) {
-      counter$countervalue <- counter$countervalue + 1
-    }
+    advance_after_decision()
+    settings.store$counter <- counter$countervalue
 
     # update buttons on press to nothing
     shinyWidgets::updatePrettyCheckboxGroup(
@@ -647,32 +720,8 @@ server <- function(input, output, session) {
     if (collab_mode) {
       original$new.data[counter$countervalue, ]$Screen.Name <- active$user
     }
-    counter$countervalue <- counter$countervalue + 1
+    advance_after_decision()
     settings.store$counter <- counter$countervalue
-
-    if (counter$countervalue > countertot$total) {
-      shinyalert::shinyalert(
-        title = "Congratulations",
-        text = "You've finished screening all papers!",
-        size = "s",
-        closeOnEsc = TRUE,
-        closeOnClickOutside = TRUE,
-        html = FALSE,
-        type = "success",
-        showConfirmButton = TRUE,
-        showCancelButton = FALSE,
-        confirmButtonText = "OK",
-        confirmButtonCol = "#AEDEF4",
-        timer = 0,
-        imageUrl = "",
-        animation = TRUE
-      )
-      cat(paste("\nCongratulations - you have finished screening", countertot$total, "papers \n"))
-      counter$countervalue <- countertot$total
-    }
-    if (counter$countervalue == 0) {
-      counter$countervalue <- counter$countervalue + 1
-    }
 
 
     shinyWidgets::updatePrettyCheckboxGroup(
@@ -716,32 +765,8 @@ server <- function(input, output, session) {
       original$new.data[counter$countervalue, ]$Screen.Name <- active$user
     }
 
-    counter$countervalue <- counter$countervalue + 1
+    advance_after_decision()
     settings.store$counter <- counter$countervalue
-
-    if (counter$countervalue > countertot$total) {
-      shinyalert::shinyalert(
-        title = "Congratulations",
-        text = "You've finished screening all papers!",
-        size = "s",
-        closeOnEsc = TRUE,
-        closeOnClickOutside = TRUE,
-        html = FALSE,
-        type = "success",
-        showConfirmButton = TRUE,
-        showCancelButton = FALSE,
-        confirmButtonText = "OK",
-        confirmButtonCol = "#AEDEF4",
-        timer = 0,
-        imageUrl = "",
-        animation = TRUE
-      )
-      cat(paste("\nCongratulations - you have finished screening", countertot$total, "papers \n"))
-      counter$countervalue <- countertot$total
-    }
-    if (counter$countervalue == 0) {
-      counter$countervalue <- counter$countervalue + 1
-    }
 
 
     shinyWidgets::updatePrettyCheckboxGroup(
@@ -824,11 +849,11 @@ server <- function(input, output, session) {
 
   # progress displayed based on counter and percentage #######
   output$progress <- shiny::renderText({
-    data <- original$new.data
-
+    rows <- my_rows()
+    data <- original$new.data[rows, , drop = FALSE]
 
     screened <- sum(data$Screen != "To be screened", na.rm = TRUE)
-    percent <- round(screened / countertot$total * 100, 0)
+    percent <- round(screened / max(length(rows), 1) * 100, 0)
 
     n_accept <- sum(data$Screen == "Accept", na.rm = TRUE)
     n_reject <- sum(data$Screen == "Reject", na.rm = TRUE)
@@ -858,7 +883,10 @@ server <- function(input, output, session) {
     paste0(
       "<p>",
       "<font color=\"#ff3333\"><b>", percent, "% screened",
-      " (Paper No = ", counter$countervalue, ")</b></font>",
+      " (Paper No = ", counter$countervalue,
+      if (browse_mode()) paste0("; browsing all ", countertot$total, " papers")
+      else if (!is.null(collab.assignment) && !is.null(active$user)) paste0("; ", sum(rows <= counter$countervalue), " of your ", length(rows), " papers"),
+      ")</b></font>",
       accept_str,
       reject_str,
       nodecision_str,
@@ -867,20 +895,16 @@ server <- function(input, output, session) {
   })
 
   # set boundaries for the counter based on total and reaching zero#######
-  shiny::observeEvent(counter$countervalue, {
-    if (counter$countervalue == 0) {
-      shinyjs::disable("Previous")
-      counter$countervalue <- counter$countervalue + 1
-    } else {
-      shinyjs::enable("Previous")
-    }
-
-    if (counter$countervalue > countertot$total) {
-      shinyjs::disable("Next")
-      counter$countervalue <- countertot$total
-    } else {
-      shinyjs::enable("Next")
-    }
+  shiny::observe({
+    i <- counter$countervalue
+    active$user
+    browse_mode()
+    shiny::isolate({
+      if (i < 1) counter$countervalue <- 1
+      if (i > countertot$total) counter$countervalue <- countertot$total
+      if (is.na(step_to(counter$countervalue, -1))) shinyjs::disable("Previous") else shinyjs::enable("Previous")
+      if (is.na(step_to(counter$countervalue, 1))) shinyjs::disable("Next") else shinyjs::enable("Next")
+    })
   })
 
 

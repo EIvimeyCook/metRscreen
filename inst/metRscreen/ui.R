@@ -8,9 +8,10 @@ ui <- function() {
     var tag = el.tagName.toLowerCase();
     // only ignore shortcuts while typing (ticking a reason or choosing a screener still allows y/m/n)
     if (tag === 'textarea' || (tag === 'input' && el.type !== 'radio' && el.type !== 'checkbox')) return;
-    if (e.key === 'y') $('#Accept').click();
-    if (e.key === 'm') $('#NoDecision').click();
-    if (e.key === 'n') $('#Reject').click();
+    // greyed-out buttons (e.g. view-only browsing) can't be pressed from the keyboard either
+    if (e.key === 'y' && !$('#Accept').prop('disabled')) $('#Accept').click();
+    if (e.key === 'm' && !$('#NoDecision').prop('disabled')) $('#NoDecision').click();
+    if (e.key === 'n' && !$('#Reject').prop('disabled')) $('#Reject').click();
   });
 ")),
     shiny::tags$script(shiny::HTML("
@@ -80,6 +81,19 @@ ui <- function() {
                 label = shiny::tags$strong("Who is screening?"),
                 choices = c(""),
                 inline = TRUE
+              )
+            ),
+            # double screening: browse every paper without being able to screen it
+            shinyjs::hidden(
+              shiny::div(
+                id = "browse.panel",
+                shinyWidgets::materialSwitch(
+                  inputId = "browse.all",
+                  label = "Browse all papers (view only)",
+                  value = FALSE,
+                  status = "warning"
+                ),
+                shiny::uiOutput("assigned.to")
               )
             ),
             shinyWidgets::checkboxGroupButtons(
@@ -191,6 +205,7 @@ ui <- function() {
           });
         })();
       ")),
+            shiny::uiOutput("view.only"),
             shiny::div(
               id = "decision_buttons",
               shinyWidgets::actionGroupButtons(

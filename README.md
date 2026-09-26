@@ -85,6 +85,7 @@ metRscreen(screen.file = "~/Desktop/Example.csv")
 | `screen.file` | Path to your `.csv` or `.RIS` of references |
 | `reject.list` | Character vector of your own rejection reasons |
 | `collab.names` | Character vector of screener names; switches on [collaborative screening](#collaborative-screening) |
+| `collab.split` | How papers are shared out in collaborative mode: `"all"` (default, everyone screens every paper) or `2` ([double screening](#splitting-papers-between-screeners-double-screening)) |
 | `keywords` | Named list of keyword vectors, one element per highlight colour |
 
 You can give specific rejection reasons as a vector with `reject.list = c()`, and
@@ -143,7 +144,54 @@ metRscreen(
    up collaborators screening at the same time from a shared or synced folder
    (e.g. Dropbox, OneDrive).
 5. **Resolve conflicts.** Every decision updates a combined summary file (see
-   below) that flags where screeners disagree.
+   below) that flags where screeners disagree. It is also rebuilt whenever a
+   screener is chosen, so it picks up decisions synced or pulled from others.
+
+### Splitting papers between screeners (double screening)
+
+By default every screener screens every paper. With a larger team that is often
+more work than needed, so `collab.split = 2` shares the papers out so that
+**each paper is screened by exactly two people**:
+
+```r
+metRscreen(
+  screen.file  = "~/Desktop/refs.csv",
+  collab.names = c("Ed", "Joel", "Shinichi", "Malgorzata"),
+  collab.split = 2
+)
+```
+
+- **Even and random.** Papers are assigned at random, and every screener gets
+  the same number of papers (give or take one). Every pair of screeners also
+  shares a similar number of papers, so no two people only ever check each
+  other. With 100 papers and four screeners, each person screens 50.
+- **Made once, then fixed.** The split is saved as
+  `refs.csv_collab_assignment.csv` (paper, title and its two screeners) the
+  first time and reused every session after, so it never reshuffles part-way
+  through. You don't need to pass `collab.split` again. Your own random-number
+  seed is not affected.
+- **You only see your own papers.** After choosing your name, **Next**,
+  **Previous** and each decision move through your papers only, the progress
+  line shows e.g. `3 of your 50 papers`, and decisions on a paper not assigned
+  to you are blocked. **Show other screeners' decisions** shows the one other
+  person assigned to that paper, and **Assigned to:** shows the paper's two
+  screeners.
+- **Browse all papers (view only).** Turn this on to read every paper, e.g. to
+  look over the whole set or talk through a conflict. Next and Previous then go
+  through all papers, but the decision buttons and keyboard shortcuts are
+  switched off, even for your own papers, so nothing can be recorded while
+  browsing. Turn it off to go back to the paper you were on. Other screeners'
+  decisions stay hidden unless **Show other screeners' decisions** is also on.
+- **Summary file.** An `Assigned.To` column lists each paper's two screeners,
+  papers not assigned to someone show `Not assigned` in their `.Screen`
+  column, and `Agreement` compares only the two assigned screeners.
+- **With exactly two screeners** `collab.split = 2` is the same as `"all"`:
+  both screen every paper.
+- **To go back to everyone screening everything**, pass `collab.split = "all"`
+  (the saved split is kept but not used). To make a new split, e.g. after adding
+  a screener, delete `refs.csv_collab_assignment.csv` before any screening has
+  started. A screener added after the split has been made has no papers until
+  the split is remade.
 
 ### Files produced
 
@@ -158,14 +206,18 @@ are written next to `refs.csv`:
 | `refs.csv_Joel-Pick_history.rds` | Joel Pick's resumable session |
 | `refs.csv_Collab_Summary.csv` | Everyone's decisions side by side plus an `Agreement` column |
 | `refs.csv_collaborators.rds` | The screeners for this project |
+| `refs.csv_collab_assignment.csv` | Only with `collab.split = 2`: the two screeners for each paper |
 
 The summary has `Title`, `Author`, `Publication.Year` and `Publication.Title`,
-then `<name>.Screen`, `<name>.Reason` and `<name>.Comment` for each screener,
-and finally `Agreement`:
+(and `Assigned.To` with `collab.split = 2`), then `<name>.Screen`,
+`<name>.Reason` and `<name>.Comment` for each screener, and finally `Agreement`:
 
-- `Agree`: everyone has screened the paper and made the same decision
-- `Conflict`: everyone has screened it but the decisions differ
-- `Incomplete`: at least one screener hasn't screened it yet
+- `Agree`: every screener of the paper has screened it and made the same decision
+- `Conflict`: every screener of the paper has screened it but the decisions differ
+- `Incomplete`: at least one screener of the paper hasn't screened it yet
+
+("Every screener of the paper" means everyone, or the two assigned screeners
+with `collab.split = 2`.)
 
 To pull out the conflicts to discuss:
 
@@ -184,6 +236,61 @@ summary_dat <- read.csv("~/Desktop/refs.csv_Collab_Summary.csv")
 conflicts <- summary_dat[summary_dat$Agreement == "Conflict", ]
 table(summary_dat$Agreement)
 ```
+
+### Working as a team
+
+Every screener only ever writes their own two files
+(`refs.csv_<name>_Screened.csv` and `refs.csv_<name>_history.rds`), so the
+project can be shared in whichever way suits your team. Whichever you choose,
+everyone should use the same version of metRscreen.
+
+**On one computer.** Run `metRscreen()` once and switch between screeners
+under **Who is screening?**.
+
+**In a shared or synced folder** (Dropbox, OneDrive, SharePoint, Google Drive
+for desktop, or a network drive):
+
+1. Put `refs.csv` in the shared folder. One person runs `metRscreen()` once
+   with `collab.names` (and `collab.split = 2` if you're splitting the papers)
+   to create the project files. Let them finish syncing before anyone else
+   starts.
+2. Everyone else runs `metRscreen()` on the same file from their own computer,
+   with no other arguments. The screeners and the split are read from the
+   shared files. The path will differ on each computer, e.g.
+   `metRscreen("~/Dropbox/Review/refs.csv")`.
+3. People can screen at the same time. With **Show other screeners'
+   decisions** on, you see others' decisions for your current paper within a
+   few seconds of them syncing.
+
+Keep to one app window per screener, and don't edit `refs.csv` once screening
+has started (metRscreen refuses screening files that no longer match it). If
+two people save at the same moment, the sync service may create a "conflicted
+copy" of `refs.csv_Collab_Summary.csv`. It's safe to delete, because the
+summary is rebuilt from everyone's own files.
+
+**With GitHub** (e.g. using GitHub Desktop). Use a private repository if your
+references or decisions shouldn't be public yet.
+
+1. **One person sets up the project.** Add `refs.csv` to the repository, run
+   `metRscreen()` once with `collab.names` (and `collab.split = 2` if
+   splitting) and close the app. Add a `.gitignore` file containing
+   `*_Collab_Summary.csv`, then commit and push `refs.csv`, `.gitignore`,
+   `refs.csv_collaborators.rds` and, if splitting,
+   `refs.csv_collab_assignment.csv`. Set this up **before** anyone starts, so
+   everyone uses the same split.
+2. **Each screener clones the repository** and runs `metRscreen()` on their
+   copy of `refs.csv` with no other arguments.
+3. **Pull before you start, and commit and push your own two files when you
+   stop.** Because nobody else edits your files, pulls and merges don't
+   conflict.
+4. **To see everyone's decisions,** pull, open metRscreen and choose your
+   name. The summary is rebuilt from all the screeners' files you have. The
+   summary is ignored by git because it changes whenever anyone screens, and
+   would otherwise cause merge conflicts.
+
+With GitHub you only see other people's decisions once they have pushed and
+you have pulled. Only the person who set up the project should add screeners,
+and they should commit the updated `refs.csv_collaborators.rds` straight away.
 
 ### Good to know
 

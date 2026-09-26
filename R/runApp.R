@@ -9,15 +9,21 @@
 #'   screeners' decisions can be shown or hidden. A combined
 #'   `<screen.file>_Collab_Summary.csv` flags agreements and conflicts. Names are
 #'   remembered, so later sessions can leave this empty or add new screeners.
+#' @param collab.split how papers are shared out in collaborative mode. `"all"` (the default): every
+#'   screener screens every paper. `2`: double screening, where every paper is screened by exactly two
+#'   screeners, with papers spread evenly and at random across the team (useful for three or more
+#'   screeners). The split is saved as `<screen.file>_collab_assignment.csv` and reused in later sessions,
+#'   so it never reshuffles part-way through; each screener only sees the papers assigned to them.
 #' @param keywords takes a list of green, red, purple, orange, or blue keywords to add to the highlight word command.
 #' @export
 
-metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL,
+metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, collab.split = "all",
                        keywords = list(green = NULL, red = NULL, purple = NULL, 
                                        orange = NULL, blue = NULL)) {
   if (missing(screen.file)) cat("\nError: Please provide a .csv file to screen\n")
   if (missing(reject.list)) reject.list <- NULL
   if (missing(collab.names)) collab.names <- NULL
+  split_given <- !missing(collab.split)
   
   # Convert .ris to .csv in place before anything else
   if (grepl("\\.ris$", screen.file, ignore.case = TRUE)) {
@@ -110,8 +116,11 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL,
       saveRDS(collab.names, collab.file)
       cat("\nCollaborative mode with screeners:", paste(collab.names, collapse = ", "), "\n")
     }
+    # double screening: which two screeners screen each paper (NULL = everyone screens everything)
+    collab.assignment <- collab_assignment(screen.file, collab.names, collab.split, split_given)
     shiny_env <- 1
     envir <- as.environment(shiny_env)
+    assign("collab.assignment", collab.assignment, envir = envir)
     assign("screen.file",    screen.file,    envir = envir)
     assign("reject.list",    reject.list,    envir = envir)
     assign("collab.names",   collab.names,   envir = envir)

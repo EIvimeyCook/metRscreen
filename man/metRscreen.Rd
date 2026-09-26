@@ -8,6 +8,7 @@ metRscreen(
   screen.file,
   reject.list = NULL,
   collab.names = NULL,
+  collab.split = "all",
   keywords = list(green = NULL, red = NULL, purple = NULL, orange = NULL, blue = NULL)
 )
 }
@@ -22,6 +23,12 @@ Each screener gets their own files (\verb{<screen.file>_<name>_Screened.csv} and
 screeners' decisions can be shown or hidden. A combined
 \verb{<screen.file>_Collab_Summary.csv} flags agreements and conflicts. Names are
 remembered, so later sessions can leave this empty or add new screeners.}
+
+\item{collab.split}{how papers are shared out in collaborative mode. \code{"all"} (the default): every
+screener screens every paper. \code{2}: double screening, where every paper is screened by exactly two
+screeners, with papers spread evenly and at random across the team (useful for three or more
+screeners). The split is saved as \verb{<screen.file>_collab_assignment.csv} and reused in later sessions,
+so it never reshuffles part-way through; each screener only sees the papers assigned to them.}
 
 \item{keywords}{takes a list of green, red, purple, orange, or blue keywords to add to the highlight word command.}
 }

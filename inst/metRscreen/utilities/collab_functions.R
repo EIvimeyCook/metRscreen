@@ -47,9 +47,30 @@ blank_screen <- function(screen.file) {
 #' @title first_unscreened
 #' @description Row of the first paper still to be screened (or the last paper)
 #' @param data screening data frame
-first_unscreened <- function(data) {
-  todo <- which(data$Screen == "To be screened")
-  if (length(todo) > 0) todo[1] else nrow(data)
+#' @param rows rows this screener screens (all rows unless papers are split between screeners)
+first_unscreened <- function(data, rows = seq_len(nrow(data))) {
+  todo <- rows[data$Screen[rows] == "To be screened"]
+  if (length(todo) > 0) todo[1] else if (length(rows)) rows[length(rows)] else nrow(data)
+}
+
+#' @title assigned_rows
+#' @description Rows (papers) a screener screens. With no split every screener screens every paper;
+#'   with a split, the rows where the screener is one of the two assigned screeners.
+#' @param assignment NULL (everyone screens everything) or the data frame from the assignment file
+#' @param user screener name (NULL = none chosen yet)
+#' @param n number of papers
+assigned_rows <- function(assignment, user, n) {
+  if (is.null(assignment) || is.null(user)) return(seq_len(n))
+  sort(assignment$row[assignment$Screener1 == user | assignment$Screener2 == user])
+}
+
+#' @title assigned_screeners
+#' @description Screeners assigned to one paper (all screeners when there is no split)
+assigned_screeners <- function(assignment, users, row) {
+  if (is.null(assignment)) return(users)
+  a <- assignment[assignment$row == row, , drop = FALSE]
+  if (!nrow(a)) return(character(0))
+  c(a$Screener1[1], a$Screener2[1])
 }
 
 #' @title load_user_state
@@ -60,7 +81,7 @@ first_unscreened <- function(data) {
 #' @param user screener name
 #' @return list with settings (as saved by metRscreen) and a status message, or
 #'   NULL settings with an error message if the saved file does not match
-load_user_state <- function(screen.file, user) {
+load_user_state <- function(screen.file, user, rows = NULL) {
   paths <- user_paths(screen.file, user)
   current <- utils::read.csv(screen.file)
 
@@ -97,7 +118,7 @@ load_user_state <- function(screen.file, user) {
       }
     }
   }
-  s$counter <- first_unscreened(s$new.data)
+  s$counter <- first_unscreened(s$new.data, if (is.null(rows)) seq_len(nrow(s$new.data)) else rows)
   list(settings = s, message = msg)
 }
 
@@ -129,7 +150,8 @@ read_user_decisions <- function(screen.file, user) {
 agreement_status <- function(screens) {
   screens <- as.matrix(screens)
   apply(screens, 1, function(x) {
-    if (any(is.na(x) | x == "To be screened")) {
+    x <- x[is.na(x) | x != "Not assigned"]      # only the screeners assigned to the paper count
+    if (!length(x) || any(is.na(x) | x == "To be screened")) {
       "Incomplete"
     } else if (length(unique(x)) == 1) {
       "Agree"
@@ -143,17 +165,24 @@ agreement_status <- function(screens) {
 #' @description Writes every screener's decision side by side with an agreement column
 #' @param screen.file path to the file being screened
 #' @param users screener names
-write_collab_summary <- function(screen.file, users) {
+#' @param assignment NULL (everyone screens everything) or the split of papers between screeners
+write_collab_summary <- function(screen.file, users, assignment = NULL) {
   base <- utils::read.csv(screen.file)
   keep <- intersect(c("Title", "Author", "Publication.Year", "Publication.Title"), names(base))
   out <- base[, keep, drop = FALSE]
+  if (!is.null(assignment)) {
+    out$Assigned.To <- paste(assignment$Screener1, assignment$Screener2, sep = " & ")[match(seq_len(nrow(base)), assignment$row)]
+  }
   screen_cols <- character(0)
 
   for (u in users) {
     d <- read_user_decisions(screen.file, u)
     ok <- !is.null(d) && nrow(d) == nrow(base) && isTRUE(all.equal(d$Title, base$Title))
+    mine <- seq_len(nrow(base)) %in% assigned_rows(assignment, u, nrow(base))
     for (col in c("Screen", "Reason", "Comment")) {
-      out[[paste0(u, ".", col)]] <- if (ok) d[[col]] else if (col == "Screen") "To be screened" else NA
+      v <- if (ok) d[[col]] else rep(if (col == "Screen") "To be screened" else NA, nrow(base))
+      v[!mine] <- if (col == "Screen") "Not assigned" else NA
+      out[[paste0(u, ".", col)]] <- v
     }
     screen_cols <- c(screen_cols, paste0(u, ".Screen"))
   }
