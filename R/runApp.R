@@ -25,7 +25,14 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
   if (missing(collab.names)) collab.names <- NULL
   split_given <- !missing(collab.split)
   
-  # Convert .ris to .csv in place before anything else
+  # Convert .ris to .csv in place before anything else. If the .csv already exists it is used as it is,
+  # so papers can't change under a screening session that has already started (delete the .csv to
+  # import the .ris again).
+  ris_csv <- sub("\\.ris$", ".csv", screen.file, ignore.case = TRUE)
+  if (grepl("\\.ris$", screen.file, ignore.case = TRUE) && file.exists(ris_csv)) {
+    cat("\nUsing", basename(ris_csv), "converted earlier (delete it to import", basename(screen.file), "again)\n")
+    screen.file <- ris_csv
+  }
   if (grepl("\\.ris$", screen.file, ignore.case = TRUE)) {
     
     tag_map <- c(
@@ -48,6 +55,7 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
     
     for (line in lines) {
       if (grepl("^ER\\s*-", line)) {
+        current <- current[vapply(current, function(v) any(nzchar(v)), logical(1))]   # drop empty fields
         for (field in multi_fields) {
           if (!is.null(current[[field]])) {
             current[[field]] <- paste(current[[field]], collapse = "; ")
@@ -58,16 +66,18 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
         last_col <- NULL
         next
       }
-      if (grepl("^[A-Z][A-Z0-9]\\s+-\\s", line)) {
+      # a tag line: two characters, spaces, "-", then a space or the end of the line (empty tags
+      # such as "N1  -" have no trailing space in some exports)
+      if (grepl("^[A-Z][A-Z0-9]\\s+-(\\s|$)", line)) {
         tag   <- trimws(sub("^([A-Z][A-Z0-9])\\s+-.*", "\\1", line))
-        value <- trimws(sub("^[A-Z][A-Z0-9]\\s+-\\s+", "", line))
+        value <- trimws(sub("^[A-Z][A-Z0-9]\\s+-\\s*", "", line))
         last_col <- NULL
         if (tag %in% names(tag_map)) {
           col <- tag_map[[tag]]
           if (col %in% multi_fields) {
-            current[[col]] <- c(current[[col]], value)
+            if (nzchar(value)) current[[col]] <- c(current[[col]], value)   # empty tags add nothing
             last_col <- col
-          } else if (is.null(current[[col]])) {
+          } else if (is.null(current[[col]]) || !nzchar(current[[col]])) {
             current[[col]] <- value
             last_col <- col
           }
@@ -76,7 +86,11 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
         # a line without a tag continues the previous field (some exports wrap long
         # abstracts over several lines; previously only the first line was kept)
         k <- length(current[[last_col]])
-        current[[last_col]][k] <- paste(current[[last_col]][k], trimws(line))
+        if (k == 0) {
+          current[[last_col]] <- trimws(line)
+        } else {
+          current[[last_col]][k] <- trimws(paste(current[[last_col]][k], trimws(line)))
+        }
       }
     }
     
@@ -121,6 +135,8 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
       stop("Screener names must contain letters or numbers (A-Z, 0-9) and be distinct once spaces, ",
            "punctuation and upper/lower case are ignored (e.g. 'Joel Pick', 'Joel-Pick' and ",
            "'joel pick' would share files).",
+           if (length(old.collab)) paste0(" Names saved for this project (in ", basename(collab.file), "): ",
+                                           paste(old.collab, collapse = ", "), "."),
            call. = FALSE)
     }
     if (length(collab.names) > 0) {

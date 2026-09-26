@@ -91,7 +91,7 @@ collab_assignment <- function(screen.file, users, split = "all", split_given = T
     missing_users <- setdiff(users, c(a$Screener1, a$Screener2))
     if (length(missing_users)) {
       cat("\nNot in the saved split, so no papers to screen:", paste(missing_users, collapse = ", "),
-          "\n(delete", basename(path), "and restart to split the papers again including them)\n")
+          "\n(a split can only be remade before anyone has screened: then delete", basename(path), "and restart)\n")
     }
     cat("\nDouble screening: using the saved split in", basename(path), "\n")
     a <- a[order(a$row), , drop = FALSE]
@@ -110,7 +110,7 @@ collab_assignment <- function(screen.file, users, split = "all", split_given = T
          "GitHub), or use collab.split = \"all\".", call. = FALSE)
   }
   # sorted, so the split doesn't depend on the order the names were given in
-  a <- make_pair_assignment(nrow(refs), sort(users))
+  a <- make_pair_assignment(nrow(refs), sort(users, method = "radix"))   # radix: same order on every computer
   a$Title <- refs$Title[a$row]
   a <- a[, c("row", "Title", "Screener1", "Screener2")]
   rownames(a) <- NULL

@@ -416,10 +416,12 @@ server <- function(input, output, session) {
     # decisions from an earlier single-screener session have no screener name, so they can't be
     # carried over automatically - ask a new screener whether they are theirs
     unnamed <- if (startsWith(loaded$message, "Starting a new")) unnamed_decisions(screen.file)
-    if (!is.null(unnamed)) {
+    # only offer the ones this screener could take (their papers, with double screening)
+    n_claim <- if (!is.null(unnamed)) length(intersect(unnamed$rows, assigned_rows(collab.assignment, new_user, countertot$total))) else 0
+    if (n_claim > 0) {
       shiny::showModal(shiny::modalDialog(
         title = "Earlier decisions found",
-        paste0(length(unnamed$rows), " paper(s) were screened in an earlier session without a screener name. ",
+        paste0(n_claim, " of your papers were screened in an earlier session without a screener name. ",
                "Were these your decisions, ", new_user, "? If so they'll be copied into your screening file."),
         footer = shiny::tagList(
           shiny::actionButton("claim_unnamed", "Yes, they're mine"),
@@ -436,6 +438,7 @@ server <- function(input, output, session) {
     # only this screener's papers (double screening), and nothing they have decided since
     rows <- intersect(unnamed$rows, my_rows())
     rows <- rows[original$new.data$Screen[rows] == "To be screened"]
+    shiny::req(length(rows) > 0)   # nothing to copy: don't lock the decisions away from their owner
     cols <- c("Screen", "Reason", "Comment")
     original$new.data[rows, cols] <- unnamed$data[rows, cols]
     original$new.data$Screen.Name[rows] <- active$user
