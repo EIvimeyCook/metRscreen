@@ -65,6 +65,7 @@ GitHub using the devtools package:
 install.packages("devtools")
 devtools::install_github("EIvimeyCook/metRscreen")
 library(metRscreen)
+packageVersion("metRscreen")   # collaborative mode needs 0.1.0 or later
 ```
 
 ## Usage
@@ -188,10 +189,14 @@ metRscreen(
 - **With exactly two screeners** `collab.split = 2` is the same as `"all"`:
   both screen every paper.
 - **To go back to everyone screening everything**, pass `collab.split = "all"`
-  (the saved split is kept but not used). To make a new split, e.g. after adding
-  a screener, delete `refs.csv_collab_assignment.csv` before any screening has
-  started. A screener added after the split has been made has no papers until
-  the split is remade.
+  every time you start metRscreen (the saved split is kept, and is used again in
+  any session started without it).
+- **The split can only be remade before screening starts.** To make a new one,
+  e.g. after adding a screener, delete `refs.csv_collab_assignment.csv` before
+  anyone has screened. Once screening has started metRscreen refuses to make a
+  new split, because it would reassign papers people have already screened; if
+  the file has been deleted, restore it from a backup or your GitHub history.
+  A screener added after the split has been made has no papers.
 
 ### Files produced
 
@@ -214,6 +219,7 @@ The summary has `Title`, `Author`, `Publication.Year` and `Publication.Title`,
 
 - `Agree`: every screener of the paper has screened it and made the same decision
 - `Conflict`: every screener of the paper has screened it but the decisions differ
+  (`No Decision` counts as a decision, so `Accept` vs `No Decision` is a conflict)
 - `Incomplete`: at least one screener of the paper hasn't screened it yet
 
 ("Every screener of the paper" means everyone, or the two assigned screeners
@@ -239,9 +245,10 @@ table(summary_dat$Agreement)
 
 ### Working as a team
 
-Every screener only ever writes their own two files
-(`refs.csv_<name>_Screened.csv` and `refs.csv_<name>_history.rds`), so the
-project can be shared in whichever way suits your team. Whichever you choose,
+Each screener's decisions are only ever written to their own two files
+(`refs.csv_<name>_Screened.csv` and `refs.csv_<name>_history.rds`); the shared
+summary and screener list are rebuilt from them. So the project can be shared in
+whichever way suits your team. Whichever you choose,
 everyone should use the same version of metRscreen.
 
 **On one computer.** Run `metRscreen()` once and switch between screeners
@@ -296,15 +303,24 @@ and they should commit the updated `refs.csv_collaborators.rds` straight away.
 
 - **Screener names are remembered.** In later sessions you can leave
   `collab.names` out, or pass only new names to add screeners.
-- **Names must be distinct once spaces and punctuation are removed.** For
-  example, `"Joel Pick"` and `"Joel-Pick"` would share files, so `metRscreen()`
-  stops with an error rather than mixing their decisions.
+- **Names must be distinct once spaces, punctuation and upper/lower case are
+  ignored.** For example, `"Joel Pick"`, `"Joel-Pick"` and `"joel pick"` would
+  share files (Mac and Windows don't distinguish case in file names), so
+  `metRscreen()` stops with an error rather than mixing their decisions. Names
+  are built from the letters A-Z and numbers.
 - **Reject reasons are shared by the whole project.** Keyword searches and
   shown/hidden fields are saved per screener.
-- **Upgrading from a shared session.** If you previously screened with
-  `collab.names` in a single shared file, each person's earlier decisions (and
-  your keywords and reject reasons) are copied into their own file the first
-  time they are chosen. The old files are left untouched.
+- **Upgrading from a shared session (versions before 0.1.0).** Earlier versions
+  kept every screener's decisions in one shared file with one row per paper, so
+  when two people screened the same paper only the last decision was kept: those
+  papers were not independently double-screened, and the earlier decision can't
+  be recovered. The decisions that were kept are copied into each person's own
+  file the first time they are chosen (with your keywords and reject reasons),
+  and the old files are left untouched.
+- **Continuing a project you screened on your own.** Decisions made without
+  `collab.names` have no screener name. The first new screener chosen is asked
+  whether they are theirs; if so they are copied into that person's file (only
+  once, and only for papers assigned to them).
 - **Each screener should work in one app window at a time.** Several people can
   screen at once from a shared folder, but the same screener shouldn't have two
   sessions open, or the last one to save wins.

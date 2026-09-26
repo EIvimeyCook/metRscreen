@@ -122,6 +122,22 @@ load_user_state <- function(screen.file, user, rows = NULL) {
   list(settings = s, message = msg)
 }
 
+#' @title unnamed_decisions
+#' @description Rows decided in an earlier single-screener session, where no screener name was recorded
+#' @param screen.file path to the file being screened
+#' @return list(rows, data) or NULL if there are none (or they have already been claimed)
+unnamed_decisions <- function(screen.file) {
+  legacy <- paste0(screen.file, "_history.rds")
+  if (!file.exists(legacy) || file.exists(paste0(screen.file, "_unnamed_claimed.rds"))) return(NULL)
+  old_dat <- tryCatch(readRDS(legacy)$new.data, error = function(e) NULL)
+  current <- utils::read.csv(screen.file)
+  if (is.null(old_dat) || !isTRUE(all.equal(old_dat$Title, current$Title))) return(NULL)
+  who <- if ("Screen.Name" %in% names(old_dat)) as.character(old_dat$Screen.Name) else rep(NA, nrow(old_dat))
+  rows <- which(old_dat$Screen != "To be screened" & (is.na(who) | who %in% c("", "No screener name given")))
+  if (!length(rows)) return(NULL)
+  list(rows = rows, data = old_dat)
+}
+
 #' @title save_user_state
 #' @description Writes a screener's decisions (.csv) and session (.rds)
 #' @param screen.file path to the file being screened
@@ -166,7 +182,7 @@ agreement_status <- function(screens) {
 #' @param screen.file path to the file being screened
 #' @param users screener names
 #' @param assignment NULL (everyone screens everything) or the split of papers between screeners
-write_collab_summary <- function(screen.file, users, assignment = NULL) {
+write_collab_summary <- function(screen.file, users, assignment = NULL, current = NULL) {
   base <- utils::read.csv(screen.file)
   keep <- intersect(c("Title", "Author", "Publication.Year", "Publication.Title"), names(base))
   out <- base[, keep, drop = FALSE]
@@ -176,7 +192,8 @@ write_collab_summary <- function(screen.file, users, assignment = NULL) {
   screen_cols <- character(0)
 
   for (u in users) {
-    d <- read_user_decisions(screen.file, u)
+    # the active screener's decisions come from the app when given (their file may not be saved yet)
+    d <- if (!is.null(current) && identical(current$user, u)) as.data.frame(current$data) else read_user_decisions(screen.file, u)
     ok <- !is.null(d) && nrow(d) == nrow(base) && isTRUE(all.equal(d$Title, base$Title))
     mine <- seq_len(nrow(base)) %in% assigned_rows(assignment, u, nrow(base))
     for (col in c("Screen", "Reason", "Comment")) {

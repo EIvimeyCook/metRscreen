@@ -404,12 +404,47 @@ server <- function(input, output, session) {
     )
 
     # refresh the combined summary, e.g. to include decisions just pulled from GitHub or synced
-    tryCatch(write_collab_summary(screen.file, collab.names, collab.assignment),
+    # (the new screener's own decisions come from memory - their file isn't saved until they screen)
+    tryCatch(write_collab_summary(screen.file, collab.names, collab.assignment,
+                                  current = list(user = new_user, data = s$new.data)),
       error = function(e) shiny::showNotification(paste("Could not update the summary file:", conditionMessage(e)), type = "warning")
     )
 
     cat(paste0("\n", loaded$message, "\n"))
     shiny::showNotification(loaded$message, type = "message")
+
+    # decisions from an earlier single-screener session have no screener name, so they can't be
+    # carried over automatically - ask a new screener whether they are theirs
+    unnamed <- if (startsWith(loaded$message, "Starting a new")) unnamed_decisions(screen.file)
+    if (!is.null(unnamed)) {
+      shiny::showModal(shiny::modalDialog(
+        title = "Earlier decisions found",
+        paste0(length(unnamed$rows), " paper(s) were screened in an earlier session without a screener name. ",
+               "Were these your decisions, ", new_user, "? If so they'll be copied into your screening file."),
+        footer = shiny::tagList(
+          shiny::actionButton("claim_unnamed", "Yes, they're mine"),
+          shiny::modalButton("No")
+        )
+      ))
+    }
+  })
+
+  shiny::observeEvent(input$claim_unnamed, {
+    shiny::removeModal()
+    unnamed <- unnamed_decisions(screen.file)
+    shiny::req(!is.null(unnamed), !is.null(active$user))
+    # only this screener's papers (double screening), and nothing they have decided since
+    rows <- intersect(unnamed$rows, my_rows())
+    rows <- rows[original$new.data$Screen[rows] == "To be screened"]
+    cols <- c("Screen", "Reason", "Comment")
+    original$new.data[rows, cols] <- unnamed$data[rows, cols]
+    original$new.data$Screen.Name[rows] <- active$user
+    settings.store$new.data <- original$new.data
+    settings.store$counter <- counter$countervalue
+    save_state(summary = TRUE)
+    saveRDS(list(user = active$user, rows = rows, date = Sys.time()), paste0(screen.file, "_unnamed_claimed.rds"))
+    counter$countervalue <- first_unscreened(original$new.data, my_rows())
+    shiny::showNotification(paste0(length(rows), " earlier decision(s) copied into ", active$user, "'s screening file"), type = "message")
   })
 
   # other screeners' decisions for the current paper (hidden by default) ########

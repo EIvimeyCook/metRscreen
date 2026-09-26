@@ -10,7 +10,7 @@ authors:
     orcid: "https://orcid.org/0000-0002-6295-3742"
 title: "metRscreen: Title and Abstract Screening for Meta-Analyses and Systematic Reviews"
 abstract: "A Shiny application for title and abstract screening, with multi-colour keyword highlighting, custom rejection reasons, and resumable sessions. Accepts Zotero CSV and RIS exports."
-version: 0.0.1.0000
+version: 0.1.0
 url: "https://github.com/EIvimeyCook/metRscreen"
 repository-code: "https://github.com/EIvimeyCook/metRscreen"
 license: MIT

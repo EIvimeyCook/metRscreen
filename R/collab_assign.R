@@ -79,6 +79,15 @@ collab_assignment <- function(screen.file, users, split = "all", split_given = T
       stop("The saved split (", basename(path), ") does not match the papers in ", basename(screen.file),
            ". Restore the original reference file, or delete the split file to make a new one.", call. = FALSE)
     }
+    # every paper needs two different screeners who are part of the project, otherwise agreement
+    # would be judged from a single screener
+    bad <- is.na(a$Screener1) | is.na(a$Screener2) | a$Screener1 == "" | a$Screener2 == "" |
+      a$Screener1 == a$Screener2 | !a$Screener1 %in% users | !a$Screener2 %in% users
+    if (any(bad)) {
+      stop("The saved split (", basename(path), ") is not valid for ", sum(bad), " paper(s): each paper needs two ",
+           "different screeners from collab.names. Restore the original split file (e.g. from a backup or GitHub).",
+           call. = FALSE)
+    }
     missing_users <- setdiff(users, c(a$Screener1, a$Screener2))
     if (length(missing_users)) {
       cat("\nNot in the saved split, so no papers to screen:", paste(missing_users, collapse = ", "),
@@ -90,7 +99,18 @@ collab_assignment <- function(screen.file, users, split = "all", split_given = T
     return(a)
   }
 
-  a <- make_pair_assignment(nrow(refs), users)
+  # a new split would reshuffle papers - never do that once anyone has started screening
+  started <- vapply(users, function(u) {
+    f <- paste0(screen.file, "_", gsub("^-+|-+$", "", gsub("[^A-Za-z0-9]+", "-", u)), "_Screened.csv")
+    file.exists(f) && any(utils::read.csv(f, stringsAsFactors = FALSE)$Screen != "To be screened", na.rm = TRUE)
+  }, logical(1))
+  if (any(started)) {
+    stop("Screening has already started (", paste(users[started], collapse = ", "), "), so a new split would ",
+         "reassign papers people have already screened. Restore ", basename(path), " (e.g. from a backup or ",
+         "GitHub), or use collab.split = \"all\".", call. = FALSE)
+  }
+  # sorted, so the split doesn't depend on the order the names were given in
+  a <- make_pair_assignment(nrow(refs), sort(users))
   a$Title <- refs$Title[a$row]
   a <- a[, c("row", "Title", "Screener1", "Screener2")]
   rownames(a) <- NULL

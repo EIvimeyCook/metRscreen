@@ -44,6 +44,7 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
     lines <- readLines(screen.file, encoding = "UTF-8", warn = FALSE)
     records <- list()
     current <- list()
+    last_col <- NULL   # field the previous tagged line went into
     
     for (line in lines) {
       if (grepl("^ER\\s*-", line)) {
@@ -54,19 +55,28 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
         }
         records <- append(records, list(lapply(current, `[[`, 1)))
         current <- list()
+        last_col <- NULL
         next
       }
       if (grepl("^[A-Z][A-Z0-9]\\s+-\\s", line)) {
         tag   <- trimws(sub("^([A-Z][A-Z0-9])\\s+-.*", "\\1", line))
         value <- trimws(sub("^[A-Z][A-Z0-9]\\s+-\\s+", "", line))
+        last_col <- NULL
         if (tag %in% names(tag_map)) {
           col <- tag_map[[tag]]
           if (col %in% multi_fields) {
             current[[col]] <- c(current[[col]], value)
+            last_col <- col
           } else if (is.null(current[[col]])) {
             current[[col]] <- value
+            last_col <- col
           }
         }
+      } else if (!is.null(last_col) && nzchar(trimws(line))) {
+        # a line without a tag continues the previous field (some exports wrap long
+        # abstracts over several lines; previously only the first line was kept)
+        k <- length(current[[last_col]])
+        current[[last_col]][k] <- paste(current[[last_col]][k], trimws(line))
       }
     }
     
@@ -107,9 +117,10 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
     collab.names <- collab.names[!is.na(collab.names) & collab.names != ""]
     # each screener's name is used in their file names, so names must stay distinct
     safe.names <- gsub("^-+|-+$", "", gsub("[^A-Za-z0-9]+", "-", collab.names))
-    if (any(safe.names == "") || anyDuplicated(safe.names)) {
-      stop("Screener names must contain letters or numbers and be distinct once spaces and ",
-           "punctuation are ignored (e.g. 'Joel Pick' and 'Joel-Pick' would share files).",
+    if (any(safe.names == "") || anyDuplicated(tolower(safe.names))) {
+      stop("Screener names must contain letters or numbers (A-Z, 0-9) and be distinct once spaces, ",
+           "punctuation and upper/lower case are ignored (e.g. 'Joel Pick', 'Joel-Pick' and ",
+           "'joel pick' would share files).",
            call. = FALSE)
     }
     if (length(collab.names) > 0) {
