@@ -37,11 +37,11 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
     
     tag_map <- c(
       TI = "Title", T1 = "Title",
-      AU = "Author",
+      AU = "Author", A1 = "Author",
       PY = "Publication.Year", Y1 = "Publication.Year",
       JO = "Publication.Title", JF = "Publication.Title",
       T2 = "Publication.Title", JA = "Publication.Title",
-      AB = "Abstract",
+      AB = "Abstract", N2 = "Abstract",
       KW = "Manual.Tags"
     )
     multi_fields <- c("Author", "Manual.Tags")
@@ -60,6 +60,10 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
           if (!is.null(current[[field]])) {
             current[[field]] <- paste(current[[field]], collapse = "; ")
           }
+        }
+        # dates such as "2020///" or "2020/05/01": keep the year
+        if (!is.null(current[["Publication.Year"]]) && grepl("^\\s*[0-9]{4}", current[["Publication.Year"]])) {
+          current[["Publication.Year"]] <- sub("^\\s*([0-9]{4}).*$", "\\1", current[["Publication.Year"]])
         }
         records <- append(records, list(lapply(current, `[[`, 1)))
         current <- list()

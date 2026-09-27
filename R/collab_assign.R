@@ -50,20 +50,56 @@ make_pair_assignment <- function(n, users, seed = 1) {
   out[order(out$row), , drop = FALSE]
 }
 
+# Has anyone in `users` made a decision yet?  (their own _Screened.csv files)
+screening_started <- function(screen.file, users) {
+  users[vapply(users, function(u) {
+    f <- paste0(screen.file, "_", gsub("^-+|-+$", "", gsub("[^A-Za-z0-9]+", "-", u)), "_Screened.csv")
+    file.exists(f) && any(utils::read.csv(f, stringsAsFactors = FALSE)$Screen != "To be screened", na.rm = TRUE)
+  }, logical(1))]
+}
+
 # The split to use for this session: NULL (everyone screens everything) or the assignment data frame.
 collab_assignment <- function(screen.file, users, split = "all", split_given = TRUE) {
   path <- paste0(screen.file, "_collab_assignment.csv")
   if (length(split) != 1 || !(identical(split, "all") || isTRUE(suppressWarnings(as.numeric(split)) == 2))) {
     stop("collab.split must be \"all\" (everyone screens every paper) or 2 (each paper screened by two people).", call. = FALSE)
   }
+
+  # The project remembers the last collab.split given, so leaving it out continues in the same mode (older
+  # projects without this setting: double screening if they have a split file).
+  mode_file <- paste0(screen.file, "_collab_split.rds")
+  if (split_given) {
+    mode <- if (identical(split, "all")) "all" else 2
+    saveRDS(mode, mode_file)
+  } else {
+    mode <- if (file.exists(mode_file)) readRDS(mode_file) else if (file.exists(path)) 2 else "all"
+  }
+
+  # A saved split for a different set of screeners (e.g. someone added) is discarded if no one
+  # has screened yet, so the papers are shared out again among the current screeners when a split is used.
+  # Once screening has started it is kept (and checked below).
+  if (file.exists(path)) {
+    old <- utils::read.csv(path, stringsAsFactors = FALSE)
+    in_split <- unique(c(old$Screener1, old$Screener2))
+    in_split <- in_split[!is.na(in_split) & in_split != ""]
+    if (!setequal(in_split, users) && !length(screening_started(screen.file, union(users, in_split)))) {
+      if (!file.remove(path)) {
+        stop("The screeners have changed, but ", basename(path), " couldn't be deleted to share the papers out ",
+             "again (is it open in another program?). Close it, or delete it yourself, and start metRscreen again.",
+             call. = FALSE)
+      }
+      cat("\nThe screeners have changed and no one has screened yet, so the saved split has been discarded\n")
+    }
+  }
+
   if (length(users) < 2) return(NULL)
 
-  if (identical(split, "all")) {
-    if (split_given && file.exists(path)) {
-      cat("\ncollab.split = \"all\": every screener screens every paper (the saved split in", basename(path), "is not used)\n")
-      return(NULL)
+  if (identical(mode, "all")) {
+    if (file.exists(path)) {
+      cat("\nEvery screener screens every paper (the saved split in", basename(path), "is kept but not used;",
+          "collab.split = 2 uses it again)\n")
     }
-    if (!split_given && file.exists(path)) split <- 2 else return(NULL)
+    return(NULL)
   }
 
   if (length(users) == 2) {
@@ -79,19 +115,20 @@ collab_assignment <- function(screen.file, users, split = "all", split_given = T
       stop("The saved split (", basename(path), ") does not match the papers in ", basename(screen.file),
            ". Restore the original reference file, or delete the split file to make a new one.", call. = FALSE)
     }
+    in_split <- unique(c(a$Screener1, a$Screener2))
     # every paper needs two different screeners who are part of the project, otherwise agreement
     # would be judged from a single screener
     bad <- is.na(a$Screener1) | is.na(a$Screener2) | a$Screener1 == "" | a$Screener2 == "" |
       a$Screener1 == a$Screener2 | !a$Screener1 %in% users | !a$Screener2 %in% users
     if (any(bad)) {
       stop("The saved split (", basename(path), ") is not valid for ", sum(bad), " paper(s): each paper needs two ",
-           "different screeners from collab.names. Restore the original split file (e.g. from a backup or GitHub).",
-           call. = FALSE)
+           "different screeners from the project's screeners. Restore the original split file (e.g. from a backup ",
+           "or GitHub).", call. = FALSE)
     }
-    missing_users <- setdiff(users, c(a$Screener1, a$Screener2))
+    missing_users <- setdiff(users, in_split)
     if (length(missing_users)) {
       cat("\nNot in the saved split, so no papers to screen:", paste(missing_users, collapse = ", "),
-          "\n(a split can only be remade before anyone has screened: then delete", basename(path), "and restart)\n")
+          "\n(screening has started, so the split can't be remade)\n")
     }
     cat("\nDouble screening: using the saved split in", basename(path), "\n")
     a <- a[order(a$row), , drop = FALSE]
@@ -100,14 +137,19 @@ collab_assignment <- function(screen.file, users, split = "all", split_given = T
   }
 
   # a new split would reshuffle papers - never do that once anyone has started screening
-  started <- vapply(users, function(u) {
-    f <- paste0(screen.file, "_", gsub("^-+|-+$", "", gsub("[^A-Za-z0-9]+", "-", u)), "_Screened.csv")
-    file.exists(f) && any(utils::read.csv(f, stringsAsFactors = FALSE)$Screen != "To be screened", na.rm = TRUE)
-  }, logical(1))
-  if (any(started)) {
-    stop("Screening has already started (", paste(users[started], collapse = ", "), "), so a new split would ",
-         "reassign papers people have already screened. Restore ", basename(path), " (e.g. from a backup or ",
-         "GitHub), or use collab.split = \"all\".", call. = FALSE)
+  started <- screening_started(screen.file, users)
+  if (length(started) && !split_given) {
+    # carrying on from an earlier session: don't block the project, carry on with everyone screening everything
+    cat("\nScreening has already started (", paste(started, collapse = ", "), "), so the papers can't be split between ",
+        "screeners now: every screener screens every paper.\n", sep = "")
+    saveRDS("all", mode_file)
+    return(NULL)
+  }
+  if (length(started)) {
+    stop("Screening has already started (", paste(started, collapse = ", "), "), so the papers can't be split ",
+         "between screeners now (it would reassign papers people have already screened). Carry on with ",
+         "collab.split = \"all\" (everyone screens every paper), or, if ", basename(path), " was deleted by ",
+         "mistake, restore it from a backup or GitHub.", call. = FALSE)
   }
   # sorted, so the split doesn't depend on the order the names were given in
   a <- make_pair_assignment(nrow(refs), sort(users, method = "radix"))   # radix: same order on every computer

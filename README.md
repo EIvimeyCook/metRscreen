@@ -65,7 +65,7 @@ GitHub using the devtools package:
 install.packages("devtools")
 devtools::install_github("EIvimeyCook/metRscreen")
 library(metRscreen)
-packageVersion("metRscreen")   # collaborative mode needs 0.1.0 or later
+packageVersion("metRscreen")   # collaborative mode needs 0.1.1 or later
 ```
 
 ## Usage
@@ -169,8 +169,8 @@ metRscreen(
 - **Made once, then fixed.** The split is saved as
   `refs.csv_collab_assignment.csv` (paper, title and its two screeners) the
   first time and reused every session after, so it never reshuffles part-way
-  through. You don't need to pass `collab.split` again. Your own random-number
-  seed is not affected.
+  through. You don't need to pass `collab.split` again: the project remembers
+  the last setting you gave it. Your own random-number seed is not affected.
 - **You only see your own papers.** After choosing your name, **Next**,
   **Previous** and each decision move through your papers only, the progress
   line shows e.g. `3 of your 50 papers`, and decisions on a paper not assigned
@@ -189,14 +189,18 @@ metRscreen(
 - **With exactly two screeners** `collab.split = 2` is the same as `"all"`:
   both screen every paper.
 - **To go back to everyone screening everything**, pass `collab.split = "all"`
-  every time you start metRscreen (the saved split is kept, and is used again in
-  any session started without it).
-- **The split can only be remade before screening starts.** To make a new one,
-  e.g. after adding a screener, delete `refs.csv_collab_assignment.csv` before
-  anyone has screened. Once screening has started metRscreen refuses to make a
-  new split, because it would reassign papers people have already screened; if
-  the file has been deleted, restore it from a backup or your GitHub history.
-  A screener added after the split has been made has no papers.
+  once; the project remembers it. The saved split is kept, and
+  `collab.split = 2` uses it again.
+- **Double screening can only start before anyone has screened.** If screening
+  has already started without a split, metRscreen carries on with everyone
+  screening every paper and says so.
+- **Adding screeners before anyone has screened.** Until the first decision
+  is made, the papers are split again automatically when a screener is added.
+- **Once screening has started the split never changes**, because that would
+  reassign papers people have already screened. A screener added then has no
+  papers. If the split file is
+  deleted, metRscreen refuses to make a new one: restore it from a backup or
+  your GitHub history.
 
 ### Files produced
 
@@ -212,6 +216,7 @@ are written next to `refs.csv`:
 | `refs.csv_Collab_Summary.csv` | Everyone's decisions side by side plus an `Agreement` column |
 | `refs.csv_collaborators.rds` | The screeners for this project |
 | `refs.csv_collab_assignment.csv` | Only with `collab.split = 2`: the two screeners for each paper |
+| `refs.csv_collab_split.rds` | The project's `collab.split` setting |
 
 The summary has `Title`, `Author`, `Publication.Year` and `Publication.Title`,
 (and `Assigned.To` with `collab.split = 2`), then `<name>.Screen`,
@@ -282,9 +287,9 @@ references or decisions shouldn't be public yet.
    `metRscreen()` once with `collab.names` (and `collab.split = 2` if
    splitting) and close the app. Add a `.gitignore` file containing
    `*_Collab_Summary.csv`, then commit and push `refs.csv`, `.gitignore`,
-   `refs.csv_collaborators.rds` and, if splitting,
-   `refs.csv_collab_assignment.csv`. Set this up **before** anyone starts, so
-   everyone uses the same split.
+   `refs.csv_collaborators.rds`, `refs.csv_collab_split.rds` and, if
+   splitting, `refs.csv_collab_assignment.csv`. Set this up **before** anyone
+   starts, so everyone uses the same split.
 2. **Each screener clones the repository** and runs `metRscreen()` on their
    copy of `refs.csv` with no other arguments.
 3. **Pull before you start, and commit and push your own two files when you
@@ -302,7 +307,8 @@ and they should commit the updated `refs.csv_collaborators.rds` straight away.
 ### Good to know
 
 - **Screener names are remembered.** In later sessions you can leave
-  `collab.names` out, or pass only new names to add screeners.
+  `collab.names` out, or pass only new names to add screeners. Names can't be
+  removed, so check the spelling the first time.
 - **Names must be distinct once spaces, punctuation and upper/lower case are
   ignored.** For example, `"Joel Pick"`, `"Joel-Pick"` and `"joel pick"` would
   share files (Mac and Windows don't distinguish case in file names), so
