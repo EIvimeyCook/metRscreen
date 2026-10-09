@@ -41,6 +41,9 @@ server <- function(input, output, session) {
   # (see utilities/collab_functions.R) and can switch between screeners
   collab_mode <- length(collab.names) > 0
   active <- shiny::reactiveValues(user = NULL)
+  # rows the active screener has decided since the last save: only these are written over their saved
+  # file, so decisions they make elsewhere at the same time (shared folder) aren't overwritten
+  decided <- integer(0)
 
   # double screening: the two screeners assigned to each paper (NULL = everyone screens every paper)
   if (!exists("collab.assignment") || !collab_mode) collab.assignment <- NULL
@@ -65,6 +68,11 @@ server <- function(input, output, session) {
       return(invisible(NULL))
     }
     n <- length(my_rows())
+    left <- sum(original$new.data$Screen[my_rows()] == "To be screened", na.rm = TRUE)
+    if (left > 0) {
+      shiny::showNotification(paste0("This is your last paper, but ", left, " earlier paper(s) are still to be screened"), type = "warning")
+      return(invisible(NULL))
+    }
     shinyalert::shinyalert(
       title = "Congratulations",
       text = if (is.null(collab.assignment)) "You've finished screening all papers!" else paste0("You've reached the last of your ", n, " papers!"),
@@ -82,8 +90,20 @@ server <- function(input, output, session) {
       if (is.null(active$user)) {
         return(invisible(NULL))
       }
-      save_user_state(screen.file, active$user, shiny::reactiveValuesToList(settings.store))
-      if (summary) write_collab_summary(screen.file, collab.names, collab.assignment)
+      merged <- save_user_state(screen.file, active$user, shiny::reactiveValuesToList(settings.store), decided)
+      # saved: from now on a newer decision made elsewhere on these papers wins
+      decided <<- integer(0)
+      # show any decisions made elsewhere
+      cols <- c("Screen", "Reason", "Comment", "Screen.Name")
+      if (!identical(lapply(merged[cols], as.character), lapply(original$new.data[cols], as.character))) {
+        original$new.data <- merged
+        settings.store$new.data <- merged
+      }
+      if (summary) {
+        tryCatch(write_collab_summary(screen.file, collab.names, collab.assignment),
+          error = function(e) shiny::showNotification(paste("Could not update the summary file (is it open in another program?):", conditionMessage(e)), type = "warning")
+        )
+      }
     } else {
       screen.dat <- as.data.frame(shiny::reactiveValuesToList(original)) |>
         dplyr::rename_all(~ gsub("new.data.", "", .))
@@ -208,13 +228,13 @@ server <- function(input, output, session) {
       counter$countervalue <- settings.store$counter
 
 
-      if (isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
+      if (same_titles(settings.store$new.data$Title, check_dat$check$Title)) {
         original$new.data <- settings.store$new.data
 
         import$first.load <- FALSE
         import$first.import <- TRUE
         cat("\nReading in saved screening file and using existing screening output\n")
-      } else if (!isTRUE(all.equal(settings.store$new.data$Title, check_dat$check$Title))) {
+      } else if (!same_titles(settings.store$new.data$Title, check_dat$check$Title)) {
         cat("\nData frame inconsistencies between saved and loaded data frames - please revert to previous version\n")
         shinyalert::shinyalert(
           title = "Warning",
@@ -357,6 +377,7 @@ server <- function(input, output, session) {
       settings.store$new.data <- original$new.data
       save_state()
     }
+    decided <<- integer(0)
 
     s <- loaded$settings
     # screener-specific settings (reject reasons and screeners are project-wide)
@@ -442,6 +463,7 @@ server <- function(input, output, session) {
     cols <- c("Screen", "Reason", "Comment")
     original$new.data[rows, cols] <- unnamed$data[rows, cols]
     original$new.data$Screen.Name[rows] <- active$user
+    decided <<- union(decided, rows)
     settings.store$new.data <- original$new.data
     settings.store$counter <- counter$countervalue
     save_state(summary = TRUE)
@@ -471,7 +493,7 @@ server <- function(input, output, session) {
 
     rows <- lapply(others, function(u) {
       d <- read_user_decisions(screen.file, u)
-      if (is.null(d) || nrow(d) < i || !identical(as.character(d$Title[i]), title)) {
+      if (is.null(d) || nrow(d) < i || !same_titles(d$Title[i], title)) {
         decisions <<- c(decisions, NA)
         return(shiny::tags$p(shiny::tags$b(paste0(u, ":")), shiny::tags$i("not started")))
       }
@@ -700,6 +722,8 @@ server <- function(input, output, session) {
       return()
     }
     original$new.data[counter$countervalue, ]$Screen <- "Accept"
+    original$new.data[counter$countervalue, ]$Reason <- "No reason given"
+    decided <<- union(decided, counter$countervalue)
     if (input$comments != "") {
       original$new.data[counter$countervalue, ]$Comment <- input$comments
     }
@@ -747,10 +771,10 @@ server <- function(input, output, session) {
       return()
     }
     original$new.data[counter$countervalue, ]$Screen <- "Reject"
+    decided <<- union(decided, counter$countervalue)
 
-    if (length(input$reject.reason > 0)) {
-      original$new.data[counter$countervalue, ]$Reason <- paste(input$reject.reason, collapse = "; ")
-    }
+    original$new.data[counter$countervalue, ]$Reason <- if (length(input$reject.reason) > 0) paste(input$reject.reason, collapse = "; ") else "No reason given"
+
     if (input$comments != "") {
       original$new.data[counter$countervalue, ]$Comment <- input$comments
     }
@@ -794,6 +818,8 @@ server <- function(input, output, session) {
       return()
     }
     original$new.data[counter$countervalue, ]$Screen <- "No Decision"
+    original$new.data[counter$countervalue, ]$Reason <- "No reason given"
+    decided <<- union(decided, counter$countervalue)
 
     if (input$comments != "") {
       original$new.data[counter$countervalue, ]$Comment <- input$comments

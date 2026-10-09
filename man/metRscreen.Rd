@@ -13,7 +13,9 @@ metRscreen(
 )
 }
 \arguments{
-\item{screen.file}{path to the csv file containing references you wish to screen.}
+\item{screen.file}{path to the csv (or .ris) file containing references you wish to screen. Can be
+absolute (\code{"~/Desktop/refs.csv"}), relative to the working directory (\code{"data/refs.csv"}), or built
+with \code{here::here()}.}
 
 \item{reject.list}{list of rejection reasons to be added to metRscreen, can be left empty}
 

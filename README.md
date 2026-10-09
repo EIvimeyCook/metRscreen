@@ -71,12 +71,14 @@ packageVersion("metRscreen")   # collaborative mode needs 0.1.1 or later
 ## Usage
 
 The only function is `metRscreen()`. The most important argument is
-`screen.file`. This can be used in conjunction with the `here::here()` package to
-enable relative pathing.
+`screen.file`, which can be an absolute path, a path relative to your working
+directory, or one built with `here::here()`.
 
 ```r
 library(metRscreen)
-metRscreen(screen.file = "~/Desktop/Examples.csv")
+metRscreen(screen.file = "~/Desktop/Examples.csv")        # absolute
+metRscreen(screen.file = "data/Examples.csv")             # relative to getwd()
+metRscreen(screen.file = here::here("data", "Examples.csv"))
 ```
 
 ## Arguments

@@ -1,7 +1,9 @@
 #' @title Run the metRscreen paper screening app
 #' @description The metRscreen shiny app allows you to screen papers via their abstracts and titles and allows for highlighting of keywords in multiple colours.
 #' @return A dataframe of decisioned papers
-#' @param screen.file path to the csv file containing references you wish to screen.
+#' @param screen.file path to the csv (or .ris) file containing references you wish to screen. Can be
+#'   absolute (`"~/Desktop/refs.csv"`), relative to the working directory (`"data/refs.csv"`), or built
+#'   with `here::here()`.
 #' @param reject.list list of rejection reasons to be added to metRscreen, can be left empty
 #' @param collab.names vector of screener names to switch on collaborative mode, can be left empty.
 #'   Each screener gets their own files (`<screen.file>_<name>_Screened.csv` and
@@ -20,10 +22,16 @@
 metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, collab.split = "all",
                        keywords = list(green = NULL, red = NULL, purple = NULL, 
                                        orange = NULL, blue = NULL)) {
-  if (missing(screen.file)) cat("\nError: Please provide a .csv file to screen\n")
+  if (missing(screen.file)) stop("Please provide a .csv or .ris file to screen", call. = FALSE)
+  # make the path absolute: the app runs with its own folder as the working directory, so a relative
+  # path (e.g. "data/refs.csv") has to be resolved against the folder metRscreen() was called from
+  screen.file <- path.expand(screen.file)
+  if (!grepl("^(/|\\\\|[A-Za-z]:)", screen.file)) screen.file <- file.path(getwd(), screen.file)
+  screen.file <- normalizePath(screen.file, winslash = "/", mustWork = FALSE)
   if (missing(reject.list)) reject.list <- NULL
   if (missing(collab.names)) collab.names <- NULL
   split_given <- !missing(collab.split)
+  check_collab_split(collab.split)   # before anything is saved
   
   # Convert .ris to .csv in place before anything else. If the .csv already exists it is used as it is,
   # so papers can't change under a screening session that has already started (delete the .csv to
@@ -132,23 +140,40 @@ metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, col
       old.collab <- readRDS(screen.history)$collab.names
     }
     collab.names <- unique(trimws(as.character(c(old.collab, collab.names))))
-    collab.names <- collab.names[!is.na(collab.names) & collab.names != ""]
+    collab.names <- mark_utf8(collab.names[!is.na(collab.names) & collab.names != ""])
     # each screener's name is used in their file names, so names must stay distinct
-    safe.names <- gsub("^-+|-+$", "", gsub("[^A-Za-z0-9]+", "-", collab.names))
+    safe.names <- safe_user(collab.names)
     if (any(safe.names == "") || anyDuplicated(tolower(safe.names))) {
-      stop("Screener names must contain letters or numbers (A-Z, 0-9) and be distinct once spaces, ",
-           "punctuation and upper/lower case are ignored (e.g. 'Joel Pick', 'Joel-Pick' and ",
+      stop("Screener names must contain letters or numbers (A-Z, 0-9; accents are dropped) and be distinct once ",
+           "spaces, punctuation, accents and upper/lower case are ignored (e.g. 'Joel Pick', 'Joel-Pick' and ",
            "'joel pick' would share files).",
            if (length(old.collab)) paste0(" Names saved for this project (in ", basename(collab.file), "): ",
                                            paste(old.collab, collapse = ", "), "."),
            call. = FALSE)
     }
+    # screeners' files under their current names first, so the split checks find them
+    if (length(collab.names) > 0) migrate_user_files(screen.file, collab.names, previous = old.collab)
+    # double screening: which two screeners screen each paper (NULL = everyone screens everything).
+    # Before the screeners are saved, so a refused split leaves the project as it was.
+    collab.assignment <- collab_assignment(screen.file, collab.names, collab.split, split_given)
     if (length(collab.names) > 0) {
       saveRDS(collab.names, collab.file)
       cat("\nCollaborative mode with screeners:", paste(collab.names, collapse = ", "), "\n")
+      # reject reasons are shared by the project, so screeners who start the app without them get them too
+      reject.file <- paste0(screen.file, "_reject_list.rds")
+      if (!is.null(reject.list)) {
+        saveRDS(reject.list, reject.file)
+      } else if (file.exists(reject.file)) {
+        reject.list <- tryCatch(readRDS(reject.file), error = function(e) NULL)
+      } else {
+        # projects started before the reasons were saved for the project: take them from a screener's session
+        for (f in c(vapply(collab.names, function(u) user_paths(screen.file, u)$history, ""), history.file)) {
+          if (!is.null(reject.list)) break
+          if (file.exists(f)) reject.list <- tryCatch(readRDS(f)$reject.list, error = function(e) NULL)
+        }
+        if (!is.null(reject.list)) saveRDS(reject.list, reject.file)
+      }
     }
-    # double screening: which two screeners screen each paper (NULL = everyone screens everything)
-    collab.assignment <- collab_assignment(screen.file, collab.names, collab.split, split_given)
     shiny_env <- 1
     envir <- as.environment(shiny_env)
     assign("collab.assignment", collab.assignment, envir = envir)

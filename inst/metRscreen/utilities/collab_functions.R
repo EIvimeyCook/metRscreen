@@ -7,24 +7,12 @@
 #'   <screen.file>_collaborators.rds     the list of screeners for the project
 #'   <screen.file>_Collab_Summary.csv    every screener's decision side by side
 
-#' @title safe_user
-#' @description Turns a screener name into something safe to use in a file name
-#' @param user screener name
-safe_user <- function(user) {
-  gsub("^-+|-+$", "", gsub("[^A-Za-z0-9]+", "-", user))
-}
-
-#' @title user_paths
-#' @description File paths for one screener
-#' @param screen.file path to the file being screened
-#' @param user screener name
-user_paths <- function(screen.file, user) {
-  stem <- paste0(screen.file, "_", safe_user(user))
-  list(
-    screened = paste0(stem, "_Screened.csv"),
-    history = paste0(stem, "_history.rds")
-  )
-}
+#' @title safe_user / user_paths
+#' @description A screener's name as used in file names, and their file paths. Shared with metRscreen()
+#'   (R/collab_assign.R) so the app and the package always agree on the file names.
+safe_user <- metRscreen:::safe_user
+user_paths <- metRscreen:::user_paths
+same_titles <- metRscreen:::same_titles
 
 #' @title collab_file
 #' @description Path of the file storing the screeners for a project
@@ -86,28 +74,54 @@ load_user_state <- function(screen.file, user, rows = NULL) {
   current <- utils::read.csv(screen.file)
 
   if (file.exists(paths$history)) {
-    s <- readRDS(paths$history)
-    if (!isTRUE(all.equal(s$new.data$Title, current$Title))) {
+    s <- tryCatch(readRDS(paths$history), error = function(e) NULL)
+    if (!is.null(s)) {
+      if (!same_titles(s$new.data$Title, current$Title)) {
+        return(list(settings = NULL, message = paste0(
+          "The saved screening file for ", user,
+          " does not match the papers being screened - please revert to the previous version"
+        )))
+      }
+      return(list(settings = s, message = paste("Resuming screening for", user)))
+    }
+    # unreadable (e.g. still syncing): use their decisions file below, if there is one
+    if (!file.exists(paths$screened)) {
       return(list(settings = NULL, message = paste0(
-        "The saved screening file for ", user,
-        " does not match the papers being screened - please revert to the previous version"
+        "The saved screening file for ", user, " (", basename(paths$history), ") could not be read - ",
+        "if it is still syncing, wait and try again, otherwise restore it from a backup"
       )))
     }
-    return(list(settings = s, message = paste("Resuming screening for", user)))
   }
 
   # new screener - start from a blank template
   s <- list(new.data = blank_screen(screen.file), counter = 1)
   msg <- paste("Starting a new screening file for", user)
 
+  # their decisions file without the session file (e.g. only the .csv was synced or committed):
+  # start from it rather than overwriting it with a blank one
+  if (file.exists(paths$screened)) {
+    d <- read_user_decisions(screen.file, user)
+    if (!is.null(d) && nrow(d) == nrow(current) && same_titles(d$Title, current$Title) &&
+      all(c("Screen", "Reason", "Comment", "Screen.Name") %in% names(d))) {
+      s$new.data <- d
+      s$counter <- first_unscreened(d, if (is.null(rows)) seq_len(nrow(d)) else rows)
+      return(list(settings = s, message = paste("Resuming screening for", user, "from", basename(paths$screened))))
+    }
+    return(list(settings = NULL, message = paste0(
+      basename(paths$screened), " does not match the papers being screened - please revert to the previous version"
+    )))
+  }
+
   # carry over decisions this person made in a shared, pre-collaborative session
   legacy <- paste0(screen.file, "_history.rds")
   if (file.exists(legacy)) {
-    old <- readRDS(legacy)
+    old <- tryCatch(readRDS(legacy), error = function(e) NULL)
     old_dat <- old$new.data
     if (!is.null(old_dat) && "Screen.Name" %in% names(old_dat) &&
-      isTRUE(all.equal(old_dat$Title, current$Title))) {
+      same_titles(old_dat$Title, current$Title)) {
+      # only their own papers (double screening)
       mine <- which(old_dat$Screen.Name == user & old_dat$Screen != "To be screened")
+      if (!is.null(rows)) mine <- intersect(mine, rows)
       if (length(mine) > 0) {
         cols <- c("Screen", "Reason", "Comment", "Screen.Name")
         s$new.data[mine, cols] <- old_dat[mine, cols]
@@ -131,7 +145,7 @@ unnamed_decisions <- function(screen.file) {
   if (!file.exists(legacy) || file.exists(paste0(screen.file, "_unnamed_claimed.rds"))) return(NULL)
   old_dat <- tryCatch(readRDS(legacy)$new.data, error = function(e) NULL)
   current <- utils::read.csv(screen.file)
-  if (is.null(old_dat) || !isTRUE(all.equal(old_dat$Title, current$Title))) return(NULL)
+  if (is.null(old_dat) || !same_titles(old_dat$Title, current$Title)) return(NULL)
   who <- if ("Screen.Name" %in% names(old_dat)) as.character(old_dat$Screen.Name) else rep(NA, nrow(old_dat))
   rows <- which(old_dat$Screen != "To be screened" & (is.na(who) | who %in% c("", "No screener name given")))
   if (!length(rows)) return(NULL)
@@ -143,11 +157,24 @@ unnamed_decisions <- function(screen.file) {
 #' @param screen.file path to the file being screened
 #' @param user screener name
 #' @param settings list of settings (reactiveValuesToList(settings.store))
-save_user_state <- function(screen.file, user, settings) {
+#' @param rows rows decided in this session. Every other row is taken from the screener's saved file,
+#'   so decisions they made elsewhere in the meantime (another computer or window sharing the folder)
+#'   are never overwritten with this session's older copy.
+#' @return the screening data as written (with any decisions made elsewhere merged in)
+save_user_state <- function(screen.file, user, settings, rows = integer(0)) {
   paths <- user_paths(screen.file, user)
+  disk <- if (file.exists(paths$history)) tryCatch(readRDS(paths$history)$new.data, error = function(e) NULL)
+  # session file unreadable (e.g. mid-sync): merge with the decisions file instead
+  if (is.null(disk)) disk <- read_user_decisions(screen.file, user)
+  if (!is.null(disk) && nrow(disk) == nrow(settings$new.data) &&
+    same_titles(disk$Title, settings$new.data$Title)) {
+    cols <- intersect(c("Screen", "Reason", "Comment", "Screen.Name"), names(disk))
+    disk[rows, cols] <- settings$new.data[rows, cols]
+    settings$new.data <- disk
+  }
   utils::write.csv(settings$new.data, file = paths$screened, row.names = FALSE)
   saveRDS(settings, file = paths$history)
-  invisible(paths)
+  invisible(settings$new.data)
 }
 
 #' @title read_user_decisions
@@ -194,7 +221,7 @@ write_collab_summary <- function(screen.file, users, assignment = NULL, current 
   for (u in users) {
     # the active screener's decisions come from the app when given (their file may not be saved yet)
     d <- if (!is.null(current) && identical(current$user, u)) as.data.frame(current$data) else read_user_decisions(screen.file, u)
-    ok <- !is.null(d) && nrow(d) == nrow(base) && isTRUE(all.equal(d$Title, base$Title))
+    ok <- !is.null(d) && nrow(d) == nrow(base) && same_titles(d$Title, base$Title)
     mine <- seq_len(nrow(base)) %in% assigned_rows(assignment, u, nrow(base))
     for (col in c("Screen", "Reason", "Comment")) {
       v <- if (ok) d[[col]] else rep(if (col == "Screen") "To be screened" else NA, nrow(base))
