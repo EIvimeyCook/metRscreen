@@ -70,7 +70,7 @@ enable relative pathing.
 
 ```r
 library(metRscreen)
-metRscreen(screen.file = "~/Desktop/Example.csv")
+metRscreen(screen.file = "~/Desktop/Examples.csv")
 ```
 
 ## Arguments
