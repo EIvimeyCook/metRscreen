@@ -50,7 +50,9 @@ Keywords of MS     = "Manual.Tags"
   decision files, so two or more people can screen the same references
   independently, switch between screeners in the app, optionally reveal each
   other's decisions, and get a combined file that flags conflicts.
-- **Keyboard shortcuts.** `y` = accept, `m` = no decision, `n` = reject.
+- **Keyboard shortcuts.** `y` = accept, `m` = no decision, `n` = reject, and the
+  left/right arrow keys move to the previous/next paper. They're listed above
+  the abstract.
 - **Zotero `.csv` and `.RIS` support.** Export straight from your reference
   manager.
 - **Wildcards in keywords.** `parent*` matches parent, parental, parenting.

@@ -165,7 +165,7 @@ server <- function(input, output, session) {
                           4. If you want to see author/title/journal/year info, select each component from the checkbox. These are blinded by default.
       <br>
       <br>
-      5. You can now make decisions using keyboard shortcuts: y = accept, m = no decision, n = decline
+      5. Keyboard shortcuts (shown above the abstract): y = accept, n = reject, m = no decision, left/right arrows = previous/next paper
       <br>
       <br>
       6. Collaborative screening: supply collab.names to metRscreen(). Each screener gets their own files and you can switch screener with 'Who is screening?'. Other screeners' decisions are hidden unless you turn on 'Show other screeners' decisions'. A combined file (_Collab_Summary.csv) flags agreements and conflicts. With collab.split = 2 each paper is screened by two people and you only see the papers assigned to you ('Browse all papers' lets you read every paper, view only).",

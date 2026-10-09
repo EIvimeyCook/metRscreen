@@ -8,11 +8,26 @@ ui <- function() {
     var tag = el.tagName.toLowerCase();
     // only ignore shortcuts while typing (ticking a reason or choosing a screener still allows y/m/n)
     if (tag === 'textarea' || (tag === 'input' && el.type !== 'radio' && el.type !== 'checkbox')) return;
+    // leave browser/system shortcuts alone (e.g. Cmd+Left is 'back', Cmd+N a new window)
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     // greyed-out buttons (e.g. view-only browsing) can't be pressed from the keyboard either
-    if (e.key === 'y' && !$('#Accept').prop('disabled')) $('#Accept').click();
-    if (e.key === 'm' && !$('#NoDecision').prop('disabled')) $('#NoDecision').click();
-    if (e.key === 'n' && !$('#Reject').prop('disabled')) $('#Reject').click();
+    var press = function(id) {
+      if (!$(id).prop('disabled')) $(id).click();
+      e.preventDefault();
+    };
+    var key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (key === 'y') press('#Accept');
+    if (key === 'm') press('#NoDecision');
+    if (key === 'n') press('#Reject');
+    // arrows move between papers, except on radio buttons, where they change the selection
+    // (e.g. 'Who is screening?')
+    if (el.type === 'radio') return;
+    if (key === 'ArrowLeft') press('#Previous');
+    if (key === 'ArrowRight') press('#Next');
   });
+  // once a screener is chosen, move focus off 'Who is screening?' so the arrow keys move between papers
+  // instead of quietly switching to the next screener
+  $(document).on('change', 'input[name=\"choose.collab\"]', function() { this.blur(); });
 ")),
     shiny::tags$script(shiny::HTML("
   $(document).on('shiny:inputchanged', function(e) {
@@ -156,6 +171,18 @@ ui <- function() {
           width = 9,
           shiny::div(
             style = "display: flex; flex-direction: column;",
+            # keyboard shortcuts, so people know they exist
+            shiny::div(
+              id = "shortcut_bar",
+              style = "display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center;
+                 font-size: 13px; color: #6c757d; margin-bottom: 6px;",
+              shiny::tags$span(shiny::icon("keyboard"), "Shortcuts:"),
+              shiny::tags$span(shiny::tags$kbd("←"), " Previous"),
+              shiny::tags$span(shiny::tags$kbd("→"), " Next"),
+              shiny::tags$span(shiny::tags$kbd("Y"), " Accept"),
+              shiny::tags$span(shiny::tags$kbd("N"), " Reject"),
+              shiny::tags$span(shiny::tags$kbd("M"), " No Decision")
+            ),
             shiny::div(
               id = "abstract_card_wrapper",
               style = "height: 500px; min-height: 150px; overflow-y: auto;",
