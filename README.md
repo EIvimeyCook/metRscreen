@@ -114,6 +114,28 @@ decisions. This will be automatically reloaded the next instance metRscreen is
 run and will return screening to the same state — the same reject list, hidden or
 showing paper components, and any previous screening decisions.
 
+## Keyboard shortcuts
+
+The shortcuts are also listed in the bar above the abstract.
+
+| Key | Action |
+| :-- | :----- |
+| `←` | Previous paper |
+| `→` | Next paper |
+| `y` | Accept |
+| `n` | Reject (with any ticked reject reasons) |
+| `m` | No Decision |
+
+- Shortcuts are ignored while you type in a keyword or comment box, so typing
+  `y`, `n` or `m` there never records a decision.
+- Shortcuts with Cmd, Ctrl or Alt held down are left to the browser (e.g.
+  Cmd+← for back), and upper-case `Y`, `N` and `M` work too.
+- In collaborative mode, choosing your name under **Who is screening?** moves
+  the focus away from it, so the arrow keys move between papers rather than
+  switching screener.
+- Shortcuts follow the same rules as the buttons: no decisions until a
+  screener is chosen in collaborative mode, or while browsing all papers.
+
 ## Collaborative screening
 
 Systematic reviews usually need at least two people to screen every reference
@@ -176,7 +198,7 @@ metRscreen(
   through. You don't need to pass `collab.split` again: the project remembers
   the last setting you gave it. Your own random-number seed is not affected.
 - **You only see your own papers.** After choosing your name, **Next**,
-  **Previous** and each decision move through your papers only, the progress
+  **Previous**, the arrow keys and each decision move through your papers only, the progress
   line shows e.g. `3 of your 50 papers`, and decisions on a paper not assigned
   to you are blocked. **Show other screeners' decisions** shows the one other
   person assigned to that paper, and **Assigned to:** shows the paper's two
@@ -193,18 +215,25 @@ metRscreen(
 - **With exactly two screeners** `collab.split = 2` is the same as `"all"`:
   both screen every paper.
 - **To go back to everyone screening everything**, pass `collab.split = "all"`
-  once; the project remembers it. The saved split is kept, and
-  `collab.split = 2` uses it again.
+  once; the project remembers it. The saved split is kept as it is (even if
+  screeners change), and `collab.split = 2` uses it again.
 - **Double screening can only start before anyone has screened.** If screening
   has already started without a split, metRscreen carries on with everyone
-  screening every paper and says so.
+  screening every paper and says so. Decisions from an earlier
+  single-screener session (without `collab.names`) count as screening having
+  started.
 - **Adding screeners before anyone has screened.** Until the first decision
   is made, the papers are split again automatically when a screener is added.
+  A split file that can't be read or no longer matches the papers is also
+  made again at this stage.
 - **Once screening has started the split never changes**, because that would
   reassign papers people have already screened. A screener added then has no
-  papers. If the split file is
-  deleted, metRscreen refuses to make a new one: restore it from a backup or
-  your GitHub history.
+  papers. If the split file is missing (e.g. it hasn't synced or been pulled
+  yet), can't be read, or no longer matches the papers, metRscreen stops
+  rather than guessing: wait for it to sync, or restore it from a backup or
+  your GitHub history. Nothing in the project is changed when metRscreen
+  stops like this. (Projects set up with an earlier version are protected
+  in the same way once they have been opened with this version.)
 
 ### Files produced
 
@@ -221,6 +250,7 @@ are written next to `refs.csv`:
 | `refs.csv_collaborators.rds` | The screeners for this project |
 | `refs.csv_collab_assignment.csv` | Only with `collab.split = 2`: the two screeners for each paper |
 | `refs.csv_collab_split.rds` | The project's `collab.split` setting |
+| `refs.csv_reject_list.rds` | The project's reject reasons |
 
 The summary has `Title`, `Author`, `Publication.Year` and `Publication.Title`,
 (and `Assigned.To` with `collab.split = 2`), then `<name>.Screen`,
@@ -291,8 +321,9 @@ references or decisions shouldn't be public yet.
    `metRscreen()` once with `collab.names` (and `collab.split = 2` if
    splitting) and close the app. Add a `.gitignore` file containing
    `*_Collab_Summary.csv`, then commit and push `refs.csv`, `.gitignore`,
-   `refs.csv_collaborators.rds`, `refs.csv_collab_split.rds` and, if
-   splitting, `refs.csv_collab_assignment.csv`. Set this up **before** anyone
+   `refs.csv_collaborators.rds`, `refs.csv_collab_split.rds`,
+   `refs.csv_reject_list.rds` and, if splitting,
+   `refs.csv_collab_assignment.csv`. Set this up **before** anyone
    starts, so everyone uses the same split.
 2. **Each screener clones the repository** and runs `metRscreen()` on their
    copy of `refs.csv` with no other arguments.
@@ -318,8 +349,18 @@ and they should commit the updated `refs.csv_collaborators.rds` straight away.
   share files (Mac and Windows don't distinguish case in file names), so
   `metRscreen()` stops with an error rather than mixing their decisions. Names
   are built from the letters A-Z and numbers.
-- **Reject reasons are shared by the whole project.** Keyword searches and
+- **Accents are dropped in file names.** `"Zoë"` uses `refs.csv_Zoe_...`
+  files and `"José"` uses `refs.csv_Jose_...`, the same on every computer, so
+  `"Zoë"` and `"Zoe"` count as the same name. Names need at least one letter
+  A-Z (accented or not) or number. Files from earlier versions, which dropped
+  accented letters altogether (`refs.csv_Zo_...`), are renamed automatically.
+- **Reject reasons are shared by the whole project.** They are saved in
+  `refs.csv_reject_list.rds`, so other screeners don't need to pass
+  `reject.list`; passing it again replaces the list. Keyword searches and
   shown/hidden fields are saved per screener.
+- **Changing a decision replaces it.** Re-deciding a paper replaces its reject
+  reason (Accept and No Decision clear it). A comment is kept unless you type a
+  new one.
 - **Upgrading from a shared session (versions before 0.1.0).** Earlier versions
   kept every screener's decisions in one shared file with one row per paper, so
   when two people screened the same paper only the last decision was kept: those
@@ -332,8 +373,14 @@ and they should commit the updated `refs.csv_collaborators.rds` straight away.
   whether they are theirs; if so they are copied into that person's file (only
   once, and only for papers assigned to them).
 - **Each screener should work in one app window at a time.** Several people can
-  screen at once from a shared folder, but the same screener shouldn't have two
-  sessions open, or the last one to save wins.
+  screen at once from a shared folder. If the same screener does have two
+  windows open (or two computers), decisions on different papers are merged
+  rather than overwritten, but if both decide the same paper the last one to
+  save wins.
+- **Half-synced or locked files.** If a screener's `_history.rds` can't be
+  read (e.g. still syncing), metRscreen carries on from their `_Screened.csv`.
+  If the summary file can't be written (e.g. it's open in Excel), you get a
+  warning and screening carries on; it is rebuilt on the next decision.
 - **Without `collab.names` nothing changes.** Single-screener projects still
   produce `refs.csv_Screened.csv` and `refs.csv_history.rds`.
 
