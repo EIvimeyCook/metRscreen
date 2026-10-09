@@ -198,16 +198,17 @@ metRscreen(
   through. You don't need to pass `collab.split` again: the project remembers
   the last setting you gave it. Your own random-number seed is not affected.
 - **You only see your own papers.** After choosing your name, **Next**,
-  **Previous**, the arrow keys and each decision move through your papers only, the progress
-  line shows e.g. `3 of your 50 papers`, and decisions on a paper not assigned
-  to you are blocked. **Show other screeners' decisions** shows the one other
-  person assigned to that paper, and **Assigned to:** shows the paper's two
-  screeners.
+  **Previous**, the arrow keys and each decision move through your papers
+  only, the progress line shows e.g. `3 of your 50 papers`, and decisions on a
+  paper not assigned to you are blocked. **Show other screeners' decisions**
+  shows the one other person assigned to that paper, and **Assigned to:**
+  shows the paper's two screeners.
 - **Browse all papers (view only).** Turn this on to read every paper, e.g. to
-  look over the whole set or talk through a conflict. Next and Previous then go
-  through all papers, but the decision buttons and keyboard shortcuts are
-  switched off, even for your own papers, so nothing can be recorded while
-  browsing. Turn it off to go back to the paper you were on. Other screeners'
+  look over the whole set or talk through a conflict. Next, Previous and the
+  arrow keys then go through all papers, but the decision buttons and the
+  `y`/`n`/`m` shortcuts are switched off, even for your own papers, so
+  nothing can be recorded while browsing. Turn it off to go back to the paper
+  you were on. Other screeners'
   decisions stay hidden unless **Show other screeners' decisions** is also on.
 - **Summary file.** An `Assigned.To` column lists each paper's two screeners,
   papers not assigned to someone show `Not assigned` in their `.Screen`
@@ -217,11 +218,13 @@ metRscreen(
 - **To go back to everyone screening everything**, pass `collab.split = "all"`
   once; the project remembers it. The saved split is kept as it is (even if
   screeners change), and `collab.split = 2` uses it again.
-- **Double screening can only start before anyone has screened.** If screening
-  has already started without a split, metRscreen carries on with everyone
-  screening every paper and says so. Decisions from an earlier
-  single-screener session (without `collab.names`) count as screening having
-  started.
+- **Double screening can only start before anyone has screened.** Passing
+  `collab.split = 2` once anyone has screened stops with an error (carry on
+  with `collab.split = "all"`). Decisions from an earlier single-screener
+  session (without `collab.names`) count as screening having started. If the
+  project was set to `2` before a split was needed (e.g. with only two
+  screeners) and a third screener is added after screening has started,
+  metRscreen carries on with everyone screening every paper and says so.
 - **Adding screeners before anyone has screened.** Until the first decision
   is made, the papers are split again automatically when a screener is added.
   A split file that can't be read or no longer matches the papers is also
@@ -285,8 +288,8 @@ table(summary_dat$Agreement)
 ### Working as a team
 
 Each screener's decisions are only ever written to their own two files
-(`refs.csv_<name>_Screened.csv` and `refs.csv_<name>_history.rds`); the shared
-summary and screener list are rebuilt from them. So the project can be shared in
+(`refs.csv_<name>_Screened.csv` and `refs.csv_<name>_history.rds`), and the
+shared summary is rebuilt from them. So the project can be shared in
 whichever way suits your team. Whichever you choose,
 everyone should use the same version of metRscreen.
 
@@ -301,8 +304,8 @@ for desktop, or a network drive):
    to create the project files. Let them finish syncing before anyone else
    starts.
 2. Everyone else runs `metRscreen()` on the same file from their own computer,
-   with no other arguments. The screeners and the split are read from the
-   shared files. The path will differ on each computer, e.g.
+   with no other arguments. The screeners, reject reasons and split are read
+   from the shared files. The path will differ on each computer, e.g.
    `metRscreen("~/Dropbox/Review/refs.csv")`.
 3. People can screen at the same time. With **Show other screeners'
    decisions** on, you see others' decisions for your current paper within a
@@ -344,16 +347,16 @@ and they should commit the updated `refs.csv_collaborators.rds` straight away.
 - **Screener names are remembered.** In later sessions you can leave
   `collab.names` out, or pass only new names to add screeners. Names can't be
   removed, so check the spelling the first time.
-- **Names must be distinct once spaces, punctuation and upper/lower case are
-  ignored.** For example, `"Joel Pick"`, `"Joel-Pick"` and `"joel pick"` would
-  share files (Mac and Windows don't distinguish case in file names), so
-  `metRscreen()` stops with an error rather than mixing their decisions. Names
-  are built from the letters A-Z and numbers.
+- **Names must be distinct once spaces, punctuation, accents and upper/lower
+  case are ignored.** For example, `"Joel Pick"`, `"Joel-Pick"` and
+  `"joel pick"` would share files (Mac and Windows don't distinguish case in
+  file names), so `metRscreen()` stops with an error rather than mixing their
+  decisions. Names need at least one letter A-Z (accented or not) or number.
 - **Accents are dropped in file names.** `"Zoë"` uses `refs.csv_Zoe_...`
   files and `"José"` uses `refs.csv_Jose_...`, the same on every computer, so
-  `"Zoë"` and `"Zoe"` count as the same name. Names need at least one letter
-  A-Z (accented or not) or number. Files from earlier versions, which dropped
-  accented letters altogether (`refs.csv_Zo_...`), are renamed automatically.
+  `"Zoë"` and `"Zoe"` count as the same name. Files from earlier versions,
+  which dropped accented letters altogether (`refs.csv_Zo_...`), are renamed
+  automatically.
 - **Reject reasons are shared by the whole project.** They are saved in
   `refs.csv_reject_list.rds`, so other screeners don't need to pass
   `reject.list`; passing it again replaces the list. Keyword searches and
@@ -366,8 +369,9 @@ and they should commit the updated `refs.csv_collaborators.rds` straight away.
   when two people screened the same paper only the last decision was kept: those
   papers were not independently double-screened, and the earlier decision can't
   be recovered. The decisions that were kept are copied into each person's own
-  file the first time they are chosen (with your keywords and reject reasons),
-  and the old files are left untouched.
+  file the first time they are chosen (with your keywords and reject reasons;
+  with double screening, only for papers assigned to them), and the old files
+  are left untouched.
 - **Continuing a project you screened on your own.** Decisions made without
   `collab.names` have no screener name. The first new screener chosen is asked
   whether they are theirs; if so they are copied into that person's file (only
@@ -379,6 +383,9 @@ and they should commit the updated `refs.csv_collaborators.rds` straight away.
   save wins.
 - **Half-synced or locked files.** If a screener's `_history.rds` can't be
   read (e.g. still syncing), metRscreen carries on from their `_Screened.csv`.
+  If `refs.csv_collab_split.rds` can't be read, metRscreen stops rather than
+  guess how papers are shared out: wait for it to sync, or pass `collab.split`
+  to replace it.
   If the summary file can't be written (e.g. it's open in Excel), you get a
   warning and screening carries on; it is rebuilt on the next decision.
 - **Without `collab.names` nothing changes.** Single-screener projects still
