@@ -68,8 +68,8 @@ devtools package. There are two versions:
 **Stable version** (the `master` branch):
 
 ```r
-install.packages("devtools")
-devtools::install_github("EIvimeyCook/metRscreen")
+install.packages("pak")
+pak::pak("EIvimeyCook/metRscreen")
 ```
 
 **Development version** (the `development` branch), with the latest features and
@@ -77,7 +77,7 @@ bug fixes ([what's new and
 fixed](https://github.com/EIvimeyCook/metRscreen/blob/development/NEWS.md)):
 
 ```r
-devtools::install_github("EIvimeyCook/metRscreen", ref = "development")
+pak::pak("EIvimeyCook/metRscreen@development")
 ```
 
 To check which version you have, run `packageVersion("metRscreen")`: 0.0.1.0000
