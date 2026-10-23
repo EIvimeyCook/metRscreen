@@ -10,6 +10,14 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
 <!-- badges: end -->
 
+> [!IMPORTANT]
+> **You are viewing the `development` branch.** It has new features and bug
+> fixes that are not yet in the stable version on `master`, including full
+> collaborative and double screening, arrow-key navigation, and fixes for
+> relative file paths, `.ris` import and R versions before 4.4. See [what's new
+> and fixed](https://github.com/EIvimeyCook/metRscreen/blob/development/NEWS.md)
+> and [how to install either version](#installation).
+
 metRscreen is an R package providing a Shiny app for **title and abstract
 screening in meta-analyses and systematic reviews**. It presents each reference
 one at a time, highlights your keywords in multiple colours so relevant terms
@@ -60,15 +68,30 @@ Keywords of MS     = "Manual.Tags"
 
 ## Installation
 
-metRscreen is not on CRAN, but you can install the development version from
-GitHub using the devtools package:
+metRscreen is not on CRAN, but you can install it from GitHub using the
+devtools package. There are two versions:
+
+**Stable version** (the `master` branch):
 
 ```r
 install.packages("devtools")
 devtools::install_github("EIvimeyCook/metRscreen")
-library(metRscreen)
-packageVersion("metRscreen")   # collaborative mode needs 0.1.1 or later
 ```
+
+**Development version** (the `development` branch), with the latest features and
+bug fixes ([what's new and
+fixed](https://github.com/EIvimeyCook/metRscreen/blob/development/NEWS.md)):
+
+```r
+devtools::install_github("EIvimeyCook/metRscreen", ref = "development")
+```
+
+To check which version you have, run `packageVersion("metRscreen")`: 0.0.1.0000
+is the stable version and 0.1.1 the development version. To switch between them,
+run the other install command.
+
+Then load it with `library(metRscreen)`. Collaborative mode needs the development
+version (0.1.1 or later).
 
 ## Usage
 
@@ -395,6 +418,13 @@ and they should commit the updated `refs.csv_collaborators.rds` straight away.
 
 Please file issues and feature requests at
 <https://github.com/EIvimeyCook/metRscreen/issues>. Pull requests are welcome.
+
+**Before reporting a bug, please install the development version (see
+[Installation](#installation)) and check whether the problem is still there.**
+Many bugs are already fixed on the `development` branch; they are listed in
+[NEWS.md](https://github.com/EIvimeyCook/metRscreen/blob/development/NEWS.md).
+When you file an issue, please include the output of
+`packageVersion("metRscreen")` and `sessionInfo()`.
 
 ## Related tools
 
