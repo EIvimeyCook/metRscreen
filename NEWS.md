@@ -1,4 +1,4 @@
-# metRscreen (development version)
+# metRscreen 0.1.1 (development version)
 
 Version 0.1.1, on the `development` branch. The stable version on `master` is
 0.0.1.0000. Check which one you have with `packageVersion("metRscreen")`.
@@ -54,6 +54,12 @@ Version 0.1.1, on the `development` branch. The stable version on `master` is
   paper whenever papers earlier in the file had not been screened yet.
 * The reference buttons were re-wired after every decision, so one click could
   run several times as a session went on.
+* If the reference file no longer matched a saved single-screener session (e.g.
+  a paper had been added), the app warned you to revert but then overwrote
+  `_Screened.csv` and `_history.rds` with nothing. These files are now left
+  untouched.
+* Holding down `y`, `n` or `m` repeated the key, recording the same decision on
+  each paper that came up. One press is now one decision.
 
 ## Other changes
 

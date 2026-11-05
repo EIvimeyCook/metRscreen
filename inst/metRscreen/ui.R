@@ -16,6 +16,9 @@ ui <- function() {
       e.preventDefault();
     };
     var key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    // a held key repeats: one press is one decision, so papers aren't decided without being read
+    // (originalEvent because jQuery's event doesn't carry 'repeat')
+    if (e.originalEvent && e.originalEvent.repeat && (key === 'y' || key === 'm' || key === 'n')) return;
     if (key === 'y') press('#Accept');
     if (key === 'm') press('#NoDecision');
     if (key === 'n') press('#Reject');

@@ -252,6 +252,9 @@ server <- function(input, output, session) {
           imageWidth = "80"
         )
         shiny::stopApp()
+        # stopApp() doesn't end this observer: without this return the save below would overwrite the
+        # screener's saved files with nothing, when they are what the warning says to go back to
+        return()
       }
     }
 
