@@ -21,8 +21,8 @@
 metRscreen is an R package providing a Shiny app for **title and abstract
 screening in meta-analyses and systematic reviews**. It presents each reference
 one at a time, highlights your keywords in multiple colours so relevant terms
-jump out of the abstract, and records an include/reject decision — with a
-reason — for every paper.
+jump out of the abstract, and records an Accept, Reject or No
+Decision for every paper, with optional reject reasons and comments.
 
 Screening is the slowest and most error-prone stage of a systematic review.
 Hundreds or thousands of abstracts have to be judged consistently against the
@@ -63,13 +63,15 @@ Keywords of MS     = "Manual.Tags"
   the abstract.
 - **Zotero `.csv` and `.RIS` support.** Export straight from your reference
   manager.
-- **Wildcards in keywords.** `parent*` matches parent, parental, parenting.
+- **Wildcards in keywords.** `parent*` matches words that continue after the
+  stem, such as parental, parenting and parents, but not parent itself. Add
+  `parent` as a separate keyword to catch it.
 - **Runs locally.** Your reference library never leaves your machine.
 
 ## Installation
 
 metRscreen is not on CRAN, but you can install it from GitHub using the
-devtools package. There are two versions:
+pak package. There are two versions:
 
 **Stable version** (the `master` branch):
 
@@ -86,7 +88,7 @@ fixed](https://github.com/EIvimeyCook/metRscreen/blob/development/NEWS.md)):
 pak::pak("EIvimeyCook/metRscreen@development")
 ```
 
-To check which version you have, run `packageVersion("metRscreen")`: 0.0.1.0000
+To check which version you have, run `packageVersion("metRscreen")`: 0.0.1.0
 is the stable version and 0.1.1 the development version. To switch between them,
 run the other install command.
 
@@ -114,7 +116,7 @@ metRscreen(screen.file = here::here("data", "Examples.csv"))
 | `reject.list` | Character vector of your own rejection reasons |
 | `collab.names` | Character vector of screener names; switches on [collaborative screening](#collaborative-screening) |
 | `collab.split` | How papers are shared out in collaborative mode: `"all"` (default, everyone screens every paper) or `2` ([double screening](#splitting-papers-between-screeners-double-screening)) |
-| `keywords` | Named list of keyword vectors, one element per highlight colour |
+| `keywords` | Named list of keyword vectors. Allowed names: `green`, `red`, `purple`, `orange`, `blue`. In the app's keyword boxes, separate terms with a comma and a space. |
 
 You can give specific rejection reasons as a vector with `reject.list = c()`, and
 select multiple rejection reasons together. You can also specify preloaded
@@ -132,10 +134,19 @@ metRscreen(
 
 ## Resuming a screening session
 
+Decisions are saved next to your reference file, after every decision, as
+`<screen.file>_Screened.csv`: your original columns plus `Screen` (`Accept`,
+`Reject`, `No Decision` or `To be screened`), `Reason`, `Comment` and
+`Screen.Name`. The session is saved as `<screen.file>_history.rds`.
+
 The `.rds` file that's produced allows for reloading of previous screening
 decisions. This will be automatically reloaded the next instance metRscreen is
 run and will return screening to the same state — the same reject list, hidden or
 showing paper components, and any previous screening decisions.
+
+When a session resumes, the saved keywords replace anything passed to
+`keywords`, so change keywords in the app's boxes. A new `reject.list` does
+replace the saved one. Font size is not saved.
 
 ## Keyboard shortcuts
 
@@ -274,9 +285,9 @@ are written next to `refs.csv`:
 | `refs.csv_Joel-Pick_history.rds` | Joel Pick's resumable session |
 | `refs.csv_Collab_Summary.csv` | Everyone's decisions side by side plus an `Agreement` column |
 | `refs.csv_collaborators.rds` | The screeners for this project |
-| `refs.csv_collab_assignment.csv` | Only with `collab.split = 2`: the two screeners for each paper |
-| `refs.csv_collab_split.rds` | The project's `collab.split` setting |
-| `refs.csv_reject_list.rds` | The project's reject reasons |
+| `refs.csv_collab_assignment.csv` | Only with `collab.split = 2` and three or more screeners: the two screeners for each paper |
+| `refs.csv_collab_split.rds` | The project's `collab.split` setting (only if you passed `collab.split`) |
+| `refs.csv_reject_list.rds` | The project's reject reasons (only if you gave `reject.list`) |
 
 The summary has `Title`, `Author`, `Publication.Year` and `Publication.Title`,
 (and `Assigned.To` with `collab.split = 2`), then `<name>.Screen`,
@@ -347,9 +358,10 @@ references or decisions shouldn't be public yet.
    `metRscreen()` once with `collab.names` (and `collab.split = 2` if
    splitting) and close the app. Add a `.gitignore` file containing
    `*_Collab_Summary.csv`, then commit and push `refs.csv`, `.gitignore`,
-   `refs.csv_collaborators.rds`, `refs.csv_collab_split.rds`,
-   `refs.csv_reject_list.rds` and, if splitting,
-   `refs.csv_collab_assignment.csv`. Set this up **before** anyone
+   `refs.csv_collaborators.rds` and whichever of these exist:
+   `refs.csv_reject_list.rds` (if you gave `reject.list`),
+   `refs.csv_collab_split.rds` (if you gave `collab.split`) and
+   `refs.csv_collab_assignment.csv` (if papers were split). Set this up **before** anyone
    starts, so everyone uses the same split.
 2. **Each screener clones the repository** and runs `metRscreen()` on their
    copy of `refs.csv` with no other arguments.
@@ -439,8 +451,8 @@ When you file an issue, please include the output of
 
 If metRscreen helps with your work, please cite it:
 
-> Ivimey-Cook, E. R. (2026). *metRscreen: Screening for meta-analysis and
-> systematic reviews in R.* R package.
+> Ivimey-Cook, E. R., & Pick, J. L. (2026). *metRscreen: Title and Abstract
+> Screening for Meta-Analyses and Systematic Reviews.* R package.
 > <https://github.com/EIvimeyCook/metRscreen>
 
 A machine-readable [`CITATION.cff`](CITATION.cff) is included, so GitHub's
