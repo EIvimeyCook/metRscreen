@@ -22,8 +22,8 @@
 metRscreen is an R package providing a Shiny app for **title and abstract
 screening in meta-analyses and systematic reviews**. It presents each reference
 one at a time, highlights your keywords in multiple colours so relevant terms
-jump out of the abstract, and records an include/reject decision — with a
-reason — for every paper.
+jump out of the abstract, and records an Accept, Reject or No
+Decision for every paper, with optional reject reasons and comments.
 
 Screening is the slowest and most error-prone stage of a systematic review.
 Hundreds or thousands of abstracts have to be judged consistently against the
@@ -57,13 +57,15 @@ Keywords of MS     = "Manual.Tags"
   automatically next time, returning the app to exactly the state you left it in.
 - **Zotero `.csv` and `.RIS` support.** Export straight from your reference
   manager.
-- **Wildcards in keywords.** `parent*` matches parent, parental, parenting.
+- **Wildcards in keywords.** `parent*` matches words that continue after the
+  stem, such as parental, parenting and parents, but not parent itself. Add
+  `parent` as a separate keyword to catch it.
 - **Runs locally.** Your reference library never leaves your machine.
 
 ## Installation
 
 metRscreen is not on CRAN, but you can install it from GitHub using the
-devtools package. There are two versions:
+pak package. There are two versions:
 
 **Stable version** (the `master` branch):
 
@@ -71,6 +73,9 @@ devtools package. There are two versions:
 install.packages("pak")
 pak::pak("EIvimeyCook/metRscreen")
 ```
+
+The stable version needs R 4.4.0 or later. On older R, use the development
+version.
 
 **Development version** (the `development` branch), with the latest features and
 bug fixes ([what's new and
@@ -80,7 +85,7 @@ fixed](https://github.com/EIvimeyCook/metRscreen/blob/development/NEWS.md)):
 pak::pak("EIvimeyCook/metRscreen@development")
 ```
 
-To check which version you have, run `packageVersion("metRscreen")`: 0.0.1.0000
+To check which version you have, run `packageVersion("metRscreen")`: 0.0.1.0
 is the stable version and 0.1.1 the development version. To switch between them,
 run the other install command.
 
@@ -90,13 +95,19 @@ version (0.1.1 or later).
 ## Usage
 
 The only function is `metRscreen()`. The most important argument is
-`screen.file`. This can be used in conjunction with the `here::here()` package to
-enable relative pathing.
+`screen.file`. In the stable version it must be an absolute path, which you can
+build with `here::here()` from the here package. A plain relative path such as
+`"data/refs.csv"` only works in the development version.
 
 ```r
 library(metRscreen)
 metRscreen(screen.file = "~/Desktop/Examples.csv")
 ```
+
+Decisions are saved next to your reference file, after every decision, as
+`<screen.file>_Screened.csv`: your original columns plus `Screen` (`Accept`,
+`Reject`, `No Decision` or `To be screened`), `Reason`, `Comment` and
+`Screen.Name`. The session is saved as `<screen.file>_history.rds`.
 
 ## Arguments
 
@@ -104,7 +115,7 @@ metRscreen(screen.file = "~/Desktop/Examples.csv")
 | :------- | :------ |
 | `screen.file` | Path to your `.csv` or `.RIS` of references |
 | `reject.list` | Character vector of your own rejection reasons |
-| `keywords` | Named list of keyword vectors, one element per highlight colour |
+| `keywords` | Named list of keyword vectors. Allowed names: `green`, `red`, `purple`, `orange`, `blue`. In the app's keyword boxes, separate terms with a comma and a space. |
 
 You can give specific rejection reasons as a vector with `reject.list = c()`, and
 select multiple rejection reasons together. You can also specify preloaded
@@ -127,10 +138,21 @@ decisions. This will be automatically reloaded the next instance metRscreen is
 run and will return screening to the same state — the same reject list, hidden or
 showing paper components, and any previous screening decisions.
 
+When a session resumes, the saved keywords replace anything passed to
+`keywords`, so change keywords in the app's boxes. A new `reject.list` does
+replace the saved one. Font size is not saved.
+
+Keep each reference file in its own folder. The stable version treats any
+`.rds` file in that folder as the saved session, so a second project in the
+same folder stops the app or makes it fail. This is fixed in the development
+version.
+
 ## Now in the development branch
 
-An option now exists for collaborative screening with the
-`collab.names = c()` argument. Try it out!
+The stable version has a basic `collab.names` argument that records a
+screener's name against each decision in one shared file. Full collaborative
+mode, with separate files per screener and a conflict summary, is in the
+development version. Try it out!
 
 Install the development version to use it (see [Installation](#installation)), and
 see [NEWS.md](https://github.com/EIvimeyCook/metRscreen/blob/development/NEWS.md) for everything else that is new or fixed.
@@ -160,8 +182,8 @@ When you file an issue, please include the output of
 
 If metRscreen helps with your work, please cite it:
 
-> Ivimey-Cook, E. R. (2026). *metRscreen: Screening for meta-analysis and
-> systematic reviews in R.* R package.
+> Ivimey-Cook, E. R., & Pick, J. L. (2026). *metRscreen: Title and Abstract
+> Screening for Meta-Analyses and Systematic Reviews.* R package.
 > <https://github.com/EIvimeyCook/metRscreen>
 
 A machine-readable [`CITATION.cff`](CITATION.cff) is included, so GitHub's
