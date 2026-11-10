@@ -117,7 +117,7 @@ metRscreen(screen.file = here::here("data", "Examples.csv"))
 | `reject.list` | Character vector of your own rejection reasons |
 | `collab.names` | Character vector of screener names; switches on [collaborative screening](#collaborative-screening) |
 | `collab.split` | How papers are shared out in collaborative mode: `"all"` (default, everyone screens every paper) or `2` ([double screening](#splitting-papers-between-screeners-double-screening)) |
-| `keywords` | Named list of keyword vectors. Allowed names: `green`, `red`, `purple`, `orange`, `blue`. In the app's keyword boxes, separate terms with a comma and a space. |
+| `keywords` | Named list of keyword vectors. Allowed names: `green`, `red`, `purple`, `orange`, `blue`. In the app's keyword boxes, separate terms with commas. |
 
 You can give specific rejection reasons as a vector with `reject.list = c()`, and
 select multiple rejection reasons together. You can also specify preloaded
