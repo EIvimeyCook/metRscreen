@@ -30,6 +30,18 @@ Version 0.1.1, on the `development` branch. The stable version on `master` is
   where `colou?r` meant an optional "u".
 * Hovering over a keyword box shows how to separate words and use the `*` and
   `?` wildcards.
+* A light/dark mode switch next to the Help button. The app starts in the same
+  mode as your computer, and decision and keyword colours are lightened in dark
+  mode so they stay readable.
+* Each keyword box now also has its own underline (solid, double, dotted,
+  dashed, wavy), so matches can be told apart without relying on colour. A
+  sample next to each box shows its style, and a switch turns the underlines
+  off for colour only.
+* Font size, light/dark mode and the underline switch are remembered between
+  sessions on the same computer (saved in metRscreen's folder under
+  `tools::R_user_dir("metRscreen", "config")`).
+* The list of screened papers moves below the abstract when there isn't room
+  for both side by side.
 
 ## Bug fixes
 
@@ -75,6 +87,15 @@ Version 0.1.1, on the `development` branch. The stable version on `master` is
   * terms separated by a comma without a space were not split, although the
     help said to use no space; spaces are now optional;
   * accented letters (e.g. café) did not match wildcards.
+* Decision, progress and keyword colours were hard to read on a white
+  background (e.g. the green "Accept" and orange keywords); they are now darker
+  in light mode so all text meets the 4.5:1 contrast guideline.
+* The keyword tip boxes are now solid and high-contrast in both modes, with the
+  examples shown as code.
+* Going back to a screened paper showed an empty comment box and no ticked
+  reasons, but a new decision silently kept the old comment. The box and
+  reasons now show what was saved for that paper, and emptying the box removes
+  the comment.
 * Holding down `y`, `n` or `m` repeated the key, recording the same decision on
   each paper that came up. One press is now one decision.
 

@@ -42,8 +42,8 @@ test_that("keywords never match inside added HTML", {
   expect_equal(
     highlight_text("the style", "the, style"),
     paste0(
-      "<div><span style=\"color:#52D017;\"><b>the</b></span> ",
-      "<span style=\"color:#52D017;\"><b>style</b></span></div>"
+      "<div><span class=\"mrs-kw mrs-kw1\"><b>the</b></span> ",
+      "<span class=\"mrs-kw mrs-kw1\"><b>style</b></span></div>"
     )
   )
   expect_equal(hits("a red span", list("red", "span", "color", "b")), c("red", "span"))
@@ -64,8 +64,8 @@ test_that("matching ignores case and needs whole words", {
 
 test_that("the first keyword box wins when matches overlap", {
   html <- highlight_text("parental", list("parent*", "parental"))
-  expect_match(html, "#52D017")
-  expect_false(grepl("#DC143C", html))
+  expect_match(html, "mrs-kw1", fixed = TRUE)
+  expect_false(grepl("mrs-kw2", html, fixed = TRUE))
 })
 
 test_that("wildcard-only and empty terms are ignored", {

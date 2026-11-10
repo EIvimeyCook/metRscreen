@@ -502,10 +502,10 @@ server <- function(input, output, session) {
       }
       decisions <<- c(decisions, d$Screen[i])
       colour <- switch(as.character(d$Screen[i]),
-        "Accept" = "#2ecc71",
-        "Reject" = "#e74c3c",
-        "No Decision" = "#3498db",
-        "#6c757d"
+        "Accept" = "var(--mrs-accept)",
+        "Reject" = "var(--mrs-reject)",
+        "No Decision" = "var(--mrs-nodecision)",
+        "var(--bs-secondary-color)"
       )
       show_reason <- isTRUE(d$Screen[i] == "Reject" && !is.na(d$Reason[i]) && d$Reason[i] != "No reason given")
       show_comment <- isTRUE(!is.na(d$Comment[i]) && d$Comment[i] != "No comments given")
@@ -521,9 +521,9 @@ server <- function(input, output, session) {
 
     status <- agreement_status(matrix(decisions, nrow = 1))
     status_colour <- switch(status,
-      "Agree" = "#2ecc71",
-      "Conflict" = "#e74c3c",
-      "#6c757d"
+      "Agree" = "var(--mrs-accept)",
+      "Conflict" = "var(--mrs-reject)",
+      "var(--bs-secondary-color)"
     )
     shiny::tagList(
       rows,
@@ -552,6 +552,25 @@ server <- function(input, output, session) {
 
       settings.store$reject.list <- reject.list
     }
+  })
+
+  # show the current paper's saved comment and reject reasons, so going back to a
+  # screened paper shows what was recorded (and a new decision doesn't silently keep
+  # a comment you can't see)
+  shiny::observe({
+    i <- counter$countervalue
+    d <- original$new.data
+    shiny::req(length(i) == 1, !is.null(d), i >= 1, i <= nrow(d))
+    comment <- d$Comment[i]
+    if (is.na(comment) || comment == "No comments given") comment <- ""
+    reason <- d$Reason[i]
+    reasons <- if (isTRUE(d$Screen[i] == "Reject") && !is.na(reason) && reason != "No reason given") {
+      strsplit(reason, "; ", fixed = TRUE)[[1]]
+    } else {
+      character(0)
+    }
+    shinyWidgets::updateTextInputIcon(session = session, inputId = "comments", value = comment)
+    shinyWidgets::updatePrettyCheckboxGroup(session = session, inputId = "reject.reason", selected = reasons)
   })
 
   # change the study with next and previous#######
@@ -586,7 +605,7 @@ server <- function(input, output, session) {
   output$view.only <- shiny::renderUI({
     shiny::req(browse_mode())
     shiny::tags$p(
-      style = "color:#e67e22; font-weight:bold; margin-bottom:6px;",
+      style = "color:var(--mrs-viewonly); font-weight:bold; margin-bottom:6px;",
       shiny::icon("eye"), " View only - switch off 'Browse all papers' to screen your papers"
     )
   })
@@ -727,9 +746,8 @@ server <- function(input, output, session) {
     original$new.data[counter$countervalue, ]$Screen <- "Accept"
     original$new.data[counter$countervalue, ]$Reason <- "No reason given"
     decided <<- union(decided, counter$countervalue)
-    if (input$comments != "") {
-      original$new.data[counter$countervalue, ]$Comment <- input$comments
-    }
+    # the box shows the saved comment, so emptying it removes the comment
+    original$new.data[counter$countervalue, ]$Comment <- if (nzchar(trimws(input$comments))) input$comments else "No comments given"
 
     if (collab_mode) {
       original$new.data[counter$countervalue, ]$Screen.Name <- active$user
@@ -778,9 +796,8 @@ server <- function(input, output, session) {
 
     original$new.data[counter$countervalue, ]$Reason <- if (length(input$reject.reason) > 0) paste(input$reject.reason, collapse = "; ") else "No reason given"
 
-    if (input$comments != "") {
-      original$new.data[counter$countervalue, ]$Comment <- input$comments
-    }
+    # the box shows the saved comment, so emptying it removes the comment
+    original$new.data[counter$countervalue, ]$Comment <- if (nzchar(trimws(input$comments))) input$comments else "No comments given"
 
     if (collab_mode) {
       original$new.data[counter$countervalue, ]$Screen.Name <- active$user
@@ -824,9 +841,8 @@ server <- function(input, output, session) {
     original$new.data[counter$countervalue, ]$Reason <- "No reason given"
     decided <<- union(decided, counter$countervalue)
 
-    if (input$comments != "") {
-      original$new.data[counter$countervalue, ]$Comment <- input$comments
-    }
+    # the box shows the saved comment, so emptying it removes the comment
+    original$new.data[counter$countervalue, ]$Comment <- if (nzchar(trimws(input$comments))) input$comments else "No comments given"
 
     if (collab_mode) {
       original$new.data[counter$countervalue, ]$Screen.Name <- active$user
@@ -862,6 +878,34 @@ server <- function(input, output, session) {
     settings.store$new.data <- original$new.data
     save_state(summary = TRUE)
   })
+
+  # font size, light/dark mode and keyword underlining are kept between sessions in
+  # R's settings folder for metRscreen (not the browser, whose storage is tied to the
+  # port, and the app gets a new port each time it starts)
+  display_file <- if (exists("R_user_dir", envir = asNamespace("tools"))) {
+    file.path(tools::R_user_dir("metRscreen", which = "config"), "display.rds")
+  }
+  display <- if (!is.null(display_file)) tryCatch(readRDS(display_file), error = function(e) NULL)
+  if (is.list(display)) {
+    size <- suppressWarnings(as.numeric(display$font_size))
+    if (length(size) == 1 && !is.na(size)) {
+      shiny::updateSliderInput(session, "font_size", value = min(max(size, 10), 28))
+    }
+    if (length(display$dark_mode) == 1 && display$dark_mode %in% c("light", "dark")) {
+      bslib::toggle_dark_mode(mode = display$dark_mode, session = session)
+    }
+    if (isTRUE(display$kw_underline) || isFALSE(display$kw_underline)) {
+      shinyWidgets::updateMaterialSwitch(session, "kw_underline", value = display$kw_underline)
+    }
+  }
+  shiny::observeEvent(list(input$font_size, input$dark_mode, input$kw_underline), {
+    if (is.null(display_file)) return()
+    tryCatch({
+      dir.create(dirname(display_file), recursive = TRUE, showWarnings = FALSE)
+      saveRDS(list(font_size = input$font_size, dark_mode = input$dark_mode, kw_underline = input$kw_underline), display_file)
+    }, error = function(e) NULL)
+  }, ignoreInit = TRUE)
+
   # hide or show fields depending on input#####
   shiny::observeEvent(input$show.fields,
     {
@@ -928,32 +972,32 @@ server <- function(input, output, session) {
 
     accept_str <- if (isTRUE(screened > 0)) {
       pct_accept <- round(n_accept / screened * 100, 0)
-      paste0("<br><font color=\"#2ecc71\"><b>Accept: ", n_accept, " (", pct_accept, "%)</b></font>")
+      paste0("<br><span style=\"color:var(--mrs-accept);\"><b>Accept: ", n_accept, " (", pct_accept, "%)</b></span>")
     } else {
       ""
     }
 
     reject_str <- if (isTRUE(screened > 0)) {
       pct_reject <- round(n_reject / screened * 100, 0)
-      paste0("<br><font color=\"#e74c3c\"><b>Reject: ", n_reject, " (", pct_reject, "%)</b></font>")
+      paste0("<br><span style=\"color:var(--mrs-reject);\"><b>Reject: ", n_reject, " (", pct_reject, "%)</b></span>")
     } else {
       ""
     }
 
     nodecision_str <- if (isTRUE(screened > 0)) {
       pct_nodecision <- round(n_nodecision / screened * 100, 0)
-      paste0("<br><font color=\"#3498db\"><b>No Decision: ", n_nodecision, " (", pct_nodecision, "%)</b></font>")
+      paste0("<br><span style=\"color:var(--mrs-nodecision);\"><b>No Decision: ", n_nodecision, " (", pct_nodecision, "%)</b></span>")
     } else {
       ""
     }
 
     paste0(
       "<p>",
-      "<font color=\"#ff3333\"><b>", percent, "% screened",
+      "<span style=\"color:var(--mrs-progress);\"><b>", percent, "% screened",
       " (Paper No = ", counter$countervalue,
       if (browse_mode()) paste0("; browsing all ", countertot$total, " papers")
       else if (!is.null(collab.assignment) && !is.null(active$user)) paste0("; ", sum(rows <= counter$countervalue), " of your ", length(rows), " papers"),
-      ")</b></font>",
+      ")</b></span>",
       accept_str,
       reject_str,
       nodecision_str,
@@ -991,9 +1035,9 @@ server <- function(input, output, session) {
 
     purrr::pmap(screened, function(Title, Author, Screen, row_idx, ...) {
       colour <- switch(Screen,
-        "Accept"      = "#2ecc71",
-        "Reject"      = "#e74c3c",
-        "No Decision" = "#3498db"
+        "Accept"      = "var(--mrs-accept)",
+        "Reject"      = "var(--mrs-reject)",
+        "No Decision" = "var(--mrs-nodecision)"
       )
       shiny::tags$div(
         style = "margin-bottom: 6px;",
@@ -1004,7 +1048,7 @@ server <- function(input, output, session) {
             shiny::tags$br(),
             shiny::tags$small(paste0(Author, " (", data$Publication.Year[row_idx], ")"))
           ),
-          style = "width: 100%; text-align: left; background: white; border: 1px solid #ddd;"
+          style = "width: 100%; text-align: left; background: var(--bs-body-bg); color: var(--bs-body-color); border: 1px solid var(--bs-border-color);"
         )
       )
     })

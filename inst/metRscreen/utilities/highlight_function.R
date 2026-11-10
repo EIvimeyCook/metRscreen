@@ -10,7 +10,7 @@
 #' @param search list of search strings, one per colour
 
 highlight_text <- function(text, search) {
-  colours <- c("#52D017", "#DC143C", "#AF33FF", "#FFB133", "#334DFF")
+  colours <- paste0("mrs-kw mrs-kw", 1:5)
 
   patterns <- list()
   for (j in seq_along(search)) {
@@ -96,7 +96,7 @@ highlight_one <- function(text, patterns) {
     out <- c(
       out,
       substr(text, pos, starts[k] - 1),
-      "<span style=\"color:", cols[k], ";\"><b>",
+      "<span class=\"", cols[k], "\"><b>",
       substr(text, starts[k], ends[k]),
       "</b></span>"
     )
