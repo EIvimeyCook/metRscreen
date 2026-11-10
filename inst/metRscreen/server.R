@@ -158,9 +158,9 @@ server <- function(input, output, session) {
     shinyalert::shinyalert("Tips",
       "1. In order to use a .csv file, export references from Zotero. <br>
                           <br>
-                           2. To highlight multiple words, separate each string with a comma and no space. <br>
+                           2. To highlight multiple words in one colour, separate them with commas (spaces are optional). <br>
                            <br>
-                           3. To use a wildcard search, enter the * character after the appropriate string. <br>
+                           3. Wildcards: * matches zero or more letters or numbers (parent* finds parent, parents, parental) and ? matches exactly one letter or number (wom?n finds woman and women). <br>
                           <br>
                           4. If you want to see author/title/journal/year info, select each component from the checkbox. These are blinded by default.
       <br>

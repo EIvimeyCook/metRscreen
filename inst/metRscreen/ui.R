@@ -143,6 +143,20 @@ ui <- function() {
             shinyWidgets::textInputIcon("search3", "Purple Keyword:", value = or_blank(keywords$purple)),
             shinyWidgets::textInputIcon("search4", "Orange Keyword:", value = or_blank(keywords$orange)),
             shinyWidgets::textInputIcon("search5", "Blue Keyword:", value = or_blank(keywords$blue)),
+            lapply(paste0("search", 1:5), function(id) {
+              tippy::tippy_this(
+                id,
+                paste(
+                  "<div style='text-align:left'>",
+                  "Separate words with commas: <b>mother, father</b><br>",
+                  "<b>*</b> = zero or more letters or numbers: <b>parent*</b> finds parent, parents, parental<br>",
+                  "<b>?</b> = exactly one letter or number: <b>wom?n</b> finds woman, women",
+                  "</div>"
+                ),
+                placement = "top",
+                arrow = TRUE
+              )
+            }),
           ),
           bslib::card(
             shiny::splitLayout(

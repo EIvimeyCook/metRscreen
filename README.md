@@ -63,9 +63,10 @@ Keywords of MS     = "Manual.Tags"
   the abstract.
 - **Zotero `.csv` and `.RIS` support.** Export straight from your reference
   manager.
-- **Wildcards in keywords.** `parent*` matches words that continue after the
-  stem, such as parental, parenting and parents, but not parent itself. Add
-  `parent` as a separate keyword to catch it.
+- **Wildcards in keywords.** `*` matches zero or more letters or numbers, so `parent*`
+  matches parent, parental, parenting and parents. `?` matches exactly one
+  letter or number, so `wom?n` matches woman and women. Separate several keywords in one
+  box with commas.
 - **Runs locally.** Your reference library never leaves your machine.
 
 ## Installation

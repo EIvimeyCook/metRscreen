@@ -25,6 +25,11 @@ Version 0.1.1, on the `development` branch. The stable version on `master` is
   mode.
 * The left and right arrow keys move between papers.
 * A shortcuts bar above the abstract lists the keyboard shortcuts.
+* New `?` wildcard in keywords, matching exactly one letter or number (`wom?n` matches
+  woman and women). It replaces the accidental regex meaning `?` had before,
+  where `colou?r` meant an optional "u".
+* Hovering over a keyword box shows how to separate words and use the `*` and
+  `?` wildcards.
 
 ## Bug fixes
 
@@ -58,6 +63,18 @@ Version 0.1.1, on the `development` branch. The stable version on `master` is
   a paper had been added), the app warned you to revert but then overwrote
   `_Screened.csv` and `_history.rds` with nothing. These files are now left
   untouched.
+* Keyword highlighting:
+  * `*` now matches zero or more letters or numbers, so `parent*` also highlights
+    "parent";
+  * a word straight after a highlighted word was skipped (e.g. only the first
+    and third of "parents parents parents");
+  * keywords such as "span", "style" or "the" could match inside the HTML added
+    for other keywords and break the display;
+  * keywords containing characters such as `+`, `(` or `.` caused an error or
+    matched the wrong thing; they are now matched literally;
+  * terms separated by a comma without a space were not split, although the
+    help said to use no space; spaces are now optional;
+  * accented letters (e.g. café) did not match wildcards.
 * Holding down `y`, `n` or `m` repeated the key, recording the same decision on
   each paper that came up. One press is now one decision.
 
