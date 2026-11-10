@@ -95,9 +95,9 @@ version (0.1.1 or later).
 ## Usage
 
 The only function is `metRscreen()`. The most important argument is
-`screen.file`. In the stable version it must be an absolute path, which you can
-build with `here::here()` from the here package. A plain relative path such as
-`"data/refs.csv"` only works in the development version.
+`screen.file`. In the stable version give it as an absolute path, which you can
+build with `here::here()` from the here package. The development version also
+accepts relative paths such as `"data/refs.csv"`.
 
 ```r
 library(metRscreen)
@@ -142,10 +142,9 @@ When a session resumes, the saved keywords replace anything passed to
 `keywords`, so change keywords in the app's boxes. A new `reject.list` does
 replace the saved one. Font size is not saved.
 
-Keep each reference file in its own folder. The stable version treats any
-`.rds` file in that folder as the saved session, so a second project in the
-same folder stops the app or makes it fail. This is fixed in the development
-version.
+Keep each reference file in its own folder: the stable version reads the saved
+session from the `.rds` file in that folder. The development version names each
+session after its reference file, so several projects can share a folder.
 
 ## Now in the development branch
 
