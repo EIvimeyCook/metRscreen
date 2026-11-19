@@ -1,8 +1,8 @@
 <a href="https://eivimeycook.github.io/metRscreen/"><img src="man/figures/logo.png" align="right" height="139" alt="metRscreen website" /></a>
 
-<div align="center">
- <h1>metRscreen</h1>
-</div>
+
+#metRscreen
+
 
 <!-- badges: start -->
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
