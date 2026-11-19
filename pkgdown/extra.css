@@ -1,0 +1,10 @@
+/* The README already shows the logo centred above the title, so hide the
+   extra copy pkgdown adds beside the title on the home page. */
+.template-home img.logo {
+  display: none;
+}
+
+.template-home .page-header {
+  border-bottom: none;
+  text-align: center;
+}

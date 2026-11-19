@@ -1,7 +1,8 @@
-<a href="https://eivimeycook.github.io/metRscreen/"><img src="man/figures/logo.png" align="right" height="139" alt="metRscreen website" /></a>
+<p align="center">
+  <a href="https://eivimeycook.github.io/metRscreen/"><img src="man/figures/logo.png" width="200" alt="metRscreen logo"/></a>
+</p>
 
-
-# metRscreen
+<h1 align="center">metRscreen</h1>
 
 
 <!-- badges: start -->
