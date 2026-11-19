@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://github.com/EIvimeyCook/metRscreen/blob/master/inst/metRscreen/www/logo/metRscreen.png" width = "200"/>
-</p>
+<a href="https://eivimeycook.github.io/metRscreen/"><img src="man/figures/logo.png" align="right" height="139" alt="metRscreen website" /></a>
 
 <div align="center">
  <h1>metRscreen</h1>
