@@ -1,4 +1,4 @@
-<a href="https://eivimeycook.github.io/metRscreen/"><img src="man/figures/logo.png" align="centre" height="139" alt="metRscreen website" /></a>
+<a href="https://eivimeycook.github.io/metRscreen/"><img src="man/figures/logo.png" align="right" height="139" alt="metRscreen website" /></a>
 
 <div align="center">
  <h1>metRscreen</h1>
