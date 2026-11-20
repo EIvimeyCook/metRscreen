@@ -5,12 +5,15 @@
 \alias{metRscreen-package}
 \title{metRscreen: Title and Abstract Screening for Meta-Analyses and Systematic Reviews}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Provides a Shiny application for screening papers by title and abstract, with highlighting of keywords in multiple colours, user-defined rejection reasons, and resumable sessions. Accepts references exported from Zotero in CSV or RIS format.
 }
 \seealso{
 Useful links:
 \itemize{
   \item \url{https://github.com/EIvimeyCook/metRscreen}
+  \item \url{https://eivimeycook.github.io/metRscreen/}
   \item Report bugs at \url{https://github.com/EIvimeyCook/metRscreen/issues}
 }
 

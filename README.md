@@ -455,7 +455,7 @@ If metRscreen helps with your work, please cite it:
 > Screening for Meta-Analyses and Systematic Reviews.* R package.
 > <https://github.com/EIvimeyCook/metRscreen>
 
-A machine-readable [`CITATION.cff`](CITATION.cff) is included, so GitHub's
+A machine-readable [`CITATION.cff`](https://github.com/EIvimeyCook/metRscreen/blob/HEAD/CITATION.cff) is included, so GitHub's
 "Cite this repository" button gives formatted APA and BibTeX.
 
 ## License

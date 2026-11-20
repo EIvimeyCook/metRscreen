@@ -35,8 +35,45 @@ so it never reshuffles part-way through; each screener only sees the papers assi
 \item{keywords}{takes a list of green, red, purple, orange, or blue keywords to add to the highlight word command.}
 }
 \value{
-A dataframe of decisioned papers
+Called for its side effect of running the app; returns \code{NULL}
+invisibly. Decisions are saved as \verb{<screen.file>_Screened.csv} (your
+original columns plus \code{Screen}, \code{Reason}, \code{Comment} and \code{Screen.Name})
+and the session as \verb{<screen.file>_history.rds}, both next to
+\code{screen.file}.
 }
 \description{
-The metRscreen shiny app allows you to screen papers via their abstracts and titles and allows for highlighting of keywords in multiple colours.
+Opens the metRscreen app for screening references by title and abstract in
+a meta-analysis or systematic review. Each reference is shown one at a
+time with your keywords highlighted in colour, and you record Accept,
+Reject (with a reason from your own list) or No Decision, plus an optional
+comment.
+
+Decisions are saved after every click, next to the reference file, so you
+can close the app at any point and carry on later by running the same call.
+With \code{collab.names}, several people can screen the same file, each with
+their own saved decisions, and a combined summary flags where they agree
+and disagree.
+}
+\examples{
+\dontrun{
+# A small set of example references ships with the package. Copy it
+# somewhere writable first, because decisions are saved next to the file.
+refs <- file.path(tempdir(), "Examples.csv")
+file.copy(system.file("metRscreen", "www", "Examples.csv",
+                      package = "metRscreen"), refs)
+
+# Screen on your own
+metRscreen(
+  screen.file = refs,
+  reject.list = c("no control", "wrong study system"),
+  keywords    = list(green = c("old", "young"), red = c("parent*"))
+)
+
+# Screen as a team, with every paper seen by exactly two people
+metRscreen(
+  screen.file  = refs,
+  collab.names = c("Ed", "Joel", "Krish"),
+  collab.split = 2
+)
+}
 }

@@ -1,6 +1,23 @@
-#' @title Run the metRscreen paper screening app
-#' @description The metRscreen shiny app allows you to screen papers via their abstracts and titles and allows for highlighting of keywords in multiple colours.
-#' @return A dataframe of decisioned papers
+#' Run the metRscreen paper screening app
+#'
+#' @description
+#' Opens the metRscreen app for screening references by title and abstract in
+#' a meta-analysis or systematic review. Each reference is shown one at a
+#' time with your keywords highlighted in colour, and you record Accept,
+#' Reject (with a reason from your own list) or No Decision, plus an optional
+#' comment.
+#'
+#' Decisions are saved after every click, next to the reference file, so you
+#' can close the app at any point and carry on later by running the same call.
+#' With `collab.names`, several people can screen the same file, each with
+#' their own saved decisions, and a combined summary flags where they agree
+#' and disagree.
+#'
+#' @return Called for its side effect of running the app; returns `NULL`
+#'   invisibly. Decisions are saved as `<screen.file>_Screened.csv` (your
+#'   original columns plus `Screen`, `Reason`, `Comment` and `Screen.Name`)
+#'   and the session as `<screen.file>_history.rds`, both next to
+#'   `screen.file`.
 #' @param screen.file path to the csv (or .ris) file containing references you wish to screen. Can be
 #'   absolute (`"~/Desktop/refs.csv"`), relative to the working directory (`"data/refs.csv"`), or built
 #'   with `here::here()`.
@@ -17,6 +34,28 @@
 #'   screeners). The split is saved as `<screen.file>_collab_assignment.csv` and reused in later sessions,
 #'   so it never reshuffles part-way through; each screener only sees the papers assigned to them.
 #' @param keywords takes a list of green, red, purple, orange, or blue keywords to add to the highlight word command.
+#' @examples
+#' \dontrun{
+#' # A small set of example references ships with the package. Copy it
+#' # somewhere writable first, because decisions are saved next to the file.
+#' refs <- file.path(tempdir(), "Examples.csv")
+#' file.copy(system.file("metRscreen", "www", "Examples.csv",
+#'                       package = "metRscreen"), refs)
+#'
+#' # Screen on your own
+#' metRscreen(
+#'   screen.file = refs,
+#'   reject.list = c("no control", "wrong study system"),
+#'   keywords    = list(green = c("old", "young"), red = c("parent*"))
+#' )
+#'
+#' # Screen as a team, with every paper seen by exactly two people
+#' metRscreen(
+#'   screen.file  = refs,
+#'   collab.names = c("Ed", "Joel", "Krish"),
+#'   collab.split = 2
+#' )
+#' }
 #' @export
 
 metRscreen <- function(screen.file, reject.list = NULL, collab.names = NULL, collab.split = "all",

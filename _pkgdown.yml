@@ -2,3 +2,10 @@ url: https://eivimeycook.github.io/metRscreen/
 template:
   bootstrap: 5
 
+reference:
+  - title: Screen references
+    desc: >
+      metRscreen has one function, which opens the screening app. Run it
+      again with the same file to carry on where you left off.
+    contents:
+      - metRscreen
